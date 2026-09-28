@@ -8,3 +8,10 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- F1 data comes from the Jolpica Ergast API via `src/lib/f1-sync.functions.ts` (`syncF1Data`), throttled by the `sync_state` table — so page loads don't hammer the upstream API.
+- The results endpoint caps responses at 100 rows; always page with `limit=100&offset=` until `MRData.total` is reached, or later rounds silently go missing.
+- Scoring lives only in `src/lib/scoring.ts` and is applied server-side during sync — keeps points identical for every player and unforgeable from the client.
+- Prediction deadlines are enforced by the `predictions_lock_guard` database trigger, not just UI state, so locks can't be bypassed.
