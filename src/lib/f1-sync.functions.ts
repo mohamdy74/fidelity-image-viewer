@@ -117,11 +117,24 @@ export const syncF1Data = createServerFn({ method: "POST" })
       );
     }
 
-    // ---- Results ----
-    const resultsPayload = await getJson<{
-      MRData: { RaceTable: { Races: ErgastRace[] } };
-    }>(`${API}/${SEASON}/results/?format=json&limit=1000`);
-    const racesWithResults = resultsPayload?.MRData.RaceTable.Races ?? [];
+    // ---- Results (the API caps each page at 100 result rows, so page through) ----
+    const racesWithResults: ErgastRace[] = [];
+    const pageSize = 100;
+    let offset = 0;
+    let total = Infinity;
+    while (offset < total && offset < 2000) {
+      const page = await getJson<{
+        MRData: { total: string; RaceTable: { Races: ErgastRace[] } };
+      }>(`${API}/${SEASON}/results/?format=json&limit=${pageSize}&offset=${offset}`);
+      if (!page) break;
+      total = Number(page.MRData.total);
+      for (const race of page.MRData.RaceTable.Races) {
+        const existing = racesWithResults.find((r) => r.round === race.round);
+        if (existing) existing.Results = [...(existing.Results ?? []), ...(race.Results ?? [])];
+        else racesWithResults.push(race);
+      }
+      offset += pageSize;
+    }
 
     const { data: dbRaces } = await supabaseAdmin
       .from("races")
