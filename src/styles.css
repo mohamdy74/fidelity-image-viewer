@@ -130,20 +130,51 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     background-image:
+      /* red glow sweeping in from the top-right, like brake discs at speed */
+      radial-gradient(
+        120% 60% at 100% 0%,
+        oklch(0.573 0.239 28.5 / 0.16) 0%,
+        transparent 55%
+      ),
+      /* gold ember low on the left */
+      radial-gradient(
+        90% 50% at 0% 100%,
+        oklch(0.879 0.169 92 / 0.07) 0%,
+        transparent 60%
+      ),
+      /* speed streaks raked back at a shallow angle */
+      repeating-linear-gradient(
+        105deg,
+        transparent 0px,
+        transparent 90px,
+        oklch(0.573 0.239 28.5 / 0.035) 90px,
+        oklch(0.573 0.239 28.5 / 0.035) 92px,
+        transparent 92px,
+        transparent 220px
+      ),
+      /* carbon weave, finer than before */
       repeating-linear-gradient(
         45deg,
-        oklch(1 0 0 / 0.014) 0px,
-        oklch(1 0 0 / 0.014) 1px,
+        oklch(1 0 0 / 0.012) 0px,
+        oklch(1 0 0 / 0.012) 1px,
         transparent 1px,
         transparent 5px
       ),
       repeating-linear-gradient(
         -45deg,
-        oklch(1 0 0 / 0.014) 0px,
-        oklch(1 0 0 / 0.014) 1px,
+        oklch(1 0 0 / 0.012) 0px,
+        oklch(1 0 0 / 0.012) 1px,
         transparent 1px,
         transparent 5px
+      ),
+      /* deep asphalt falloff toward the bottom */
+      linear-gradient(
+        180deg,
+        oklch(0.21 0.02 285) 0%,
+        var(--color-background) 45%,
+        oklch(0.15 0.014 280) 100%
       );
+    background-attachment: fixed;
   }
 
   h1,
