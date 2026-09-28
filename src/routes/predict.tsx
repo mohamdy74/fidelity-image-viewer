@@ -113,10 +113,15 @@ function Predict() {
 
   const usedInTop10 = top10.filter((d) => d !== EMPTY);
   const duplicates = usedInTop10.length !== new Set(usedInTop10).size;
+  const dnfInTop10 = dnf !== EMPTY && usedInTop10.includes(dnf);
 
   async function save() {
     if (duplicates) {
       toast.error("Each driver can only appear once in your top 10.");
+      return;
+    }
+    if (dnfInTop10) {
+      toast.error("Your DNF pick can't be one of your top 10 finishers.");
       return;
     }
     if (usedInTop10.length !== 10 && !raceLocked) {
@@ -182,6 +187,7 @@ function Predict() {
                 drivers={drivers ?? []}
                 value={value}
                 disabled={raceLocked}
+                exclude={top10.filter((d, i) => i !== index && d !== EMPTY)}
                 onChange={(v) =>
                   setTop10((prev) => prev.map((p, i) => (i === index ? v : p)))
                 }
@@ -220,8 +226,14 @@ function Predict() {
               drivers={drivers ?? []}
               value={dnf}
               disabled={raceLocked}
+              exclude={usedInTop10}
               onChange={setDnf}
             />
+            {dnfInTop10 && (
+              <p className="mt-1.5 text-sm text-destructive">
+                Your DNF pick can't be one of your top 10 finishers.
+              </p>
+            )}
           </Field>
         </div>
       </section>
@@ -256,11 +268,13 @@ function DriverSelect({
   value,
   onChange,
   disabled,
+  exclude,
 }: {
   drivers: Driver[];
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  exclude?: string[];
 }) {
   return (
     <Select value={value} onValueChange={onChange} disabled={!!disabled}>
@@ -269,13 +283,17 @@ function DriverSelect({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={EMPTY}>— No pick —</SelectItem>
-        {drivers.map((d) => (
-          <SelectItem key={d.id} value={d.id}>
-            {d.code ? `${d.code} · ` : ""}
-            {d.full_name}
-            {d.team ? ` (${d.team})` : ""}
-          </SelectItem>
-        ))}
+        {drivers.map((d) => {
+          const taken = !!exclude?.includes(d.id) && d.id !== value;
+          return (
+            <SelectItem key={d.id} value={d.id} disabled={taken}>
+              {d.code ? `${d.code} · ` : ""}
+              {d.full_name}
+              {d.team ? ` (${d.team})` : ""}
+              {taken ? " — already picked" : ""}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );
