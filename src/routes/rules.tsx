@@ -37,8 +37,6 @@ const bonusRows = [
   ["No predictions submitted", "−25"],
 ];
 
-export default function noop() {}
-
 function Rules() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
