@@ -14,7 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      drivers: {
+        Row: {
+          active: boolean
+          code: string | null
+          full_name: string
+          id: string
+          number: number | null
+          team: string | null
+        }
+        Insert: {
+          active?: boolean
+          code?: string | null
+          full_name: string
+          id: string
+          number?: number | null
+          team?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string | null
+          full_name?: string
+          id?: string
+          number?: number | null
+          team?: string | null
+        }
+        Relationships: []
+      }
+      predictions: {
+        Row: {
+          created_at: string
+          dnf_driver_id: string | null
+          fastest_lap_driver_id: string | null
+          id: string
+          pole_driver_id: string | null
+          race_id: string
+          top10: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dnf_driver_id?: string | null
+          fastest_lap_driver_id?: string | null
+          id?: string
+          pole_driver_id?: string | null
+          race_id: string
+          top10?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dnf_driver_id?: string | null
+          fastest_lap_driver_id?: string | null
+          id?: string
+          pole_driver_id?: string | null
+          race_id?: string
+          top10?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      race_results: {
+        Row: {
+          driver_id: string
+          fastest_lap: boolean
+          finished: boolean
+          id: string
+          pole: boolean
+          position: number | null
+          race_id: string
+          status: string | null
+        }
+        Insert: {
+          driver_id: string
+          fastest_lap?: boolean
+          finished?: boolean
+          id?: string
+          pole?: boolean
+          position?: number | null
+          race_id: string
+          status?: string | null
+        }
+        Update: {
+          driver_id?: string
+          fastest_lap?: boolean
+          finished?: boolean
+          id?: string
+          pole?: boolean
+          position?: number | null
+          race_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "race_results_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      races: {
+        Row: {
+          circuit: string | null
+          country: string | null
+          has_results: boolean
+          id: string
+          locality: string | null
+          name: string
+          qualifying_at: string | null
+          race_at: string
+          round: number
+          season: number
+        }
+        Insert: {
+          circuit?: string | null
+          country?: string | null
+          has_results?: boolean
+          id?: string
+          locality?: string | null
+          name: string
+          qualifying_at?: string | null
+          race_at: string
+          round: number
+          season: number
+        }
+        Update: {
+          circuit?: string | null
+          country?: string | null
+          has_results?: boolean
+          id?: string
+          locality?: string | null
+          name?: string
+          qualifying_at?: string | null
+          race_at?: string
+          round?: number
+          season?: number
+        }
+        Relationships: []
+      }
+      scores: {
+        Row: {
+          breakdown: Json
+          id: string
+          points: number
+          race_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          breakdown?: Json
+          id?: string
+          points?: number
+          race_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          breakdown?: Json
+          id?: string
+          points?: number
+          race_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scores_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
