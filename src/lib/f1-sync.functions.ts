@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 
+import type { Json } from "@/integrations/supabase/types";
 import { NO_SUBMISSION_PENALTY, scorePrediction, type ResultRow } from "./scoring";
 
 const API = "https://api.jolpi.ca/ergast/f1";
 const SEASON = 2026;
 const STALE_MS = 15 * 60 * 1000;
 
-type ErgastSession = { date: string; time?: string };
+type ErgastSession = { date: string; time?: string | undefined };
 type ErgastRace = {
   season: string;
   round: string;
@@ -28,7 +29,7 @@ type ErgastRace = {
   }>;
 };
 
-function toIso(session: { date: string; time?: string } | undefined): string | null {
+function toIso(session: { date: string; time?: string | undefined } | undefined): string | null {
   if (!session?.date) return null;
   return new Date(`${session.date}T${session.time ?? "12:00:00Z"}`).toISOString();
 }
@@ -194,7 +195,7 @@ async function scoreAllRaces() {
       user_id: string;
       race_id: string;
       points: number;
-      breakdown: Record<string, unknown>;
+      breakdown: Json;
       updated_at: string;
     }> = [];
 

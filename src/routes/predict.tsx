@@ -263,7 +263,7 @@ function DriverSelect({
   disabled?: boolean;
 }) {
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value} onValueChange={onChange} disabled={!!disabled}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select driver" />
       </SelectTrigger>
