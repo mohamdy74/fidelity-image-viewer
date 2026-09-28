@@ -221,6 +221,21 @@ export type Database = {
           },
         ]
       }
+      sync_state: {
+        Row: {
+          key: string
+          synced_at: string
+        }
+        Insert: {
+          key: string
+          synced_at?: string
+        }
+        Update: {
+          key?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
