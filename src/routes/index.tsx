@@ -75,6 +75,30 @@ function Home() {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-16">
+        <div className="mb-6">
+          <div className="flex items-center justify-between font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <span>Season progress</span>
+            <span>
+              {races.filter((r) => r.has_results).length} / {races.length} races
+            </span>
+          </div>
+          <div className="mt-2 flex gap-1">
+            {races.map((r) => (
+              <span
+                key={r.id}
+                title={r.name}
+                className={
+                  "h-2 flex-1 rounded-sm " +
+                  (r.has_results
+                    ? "bg-primary"
+                    : r.id === upcoming?.id
+                      ? "animate-pulse bg-gold"
+                      : "bg-secondary")
+                }
+              />
+            ))}
+          </div>
+        </div>
         {upcoming ? (
           <div className="carbon-panel rounded-lg p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
