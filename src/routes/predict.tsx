@@ -266,10 +266,20 @@ function DriverSelect({
           const taken = !!exclude?.includes(d.id) && d.id !== value;
           return (
             <SelectItem key={d.id} value={d.id} disabled={taken}>
-              {d.code ? `${d.code} · ` : ""}
-              {d.full_name}
-              {d.team ? ` (${d.team})` : ""}
-              {taken ? " — already picked" : ""}
+              <span className="flex items-center gap-2">
+                <span
+                  className="w-6 shrink-0 border-l-2 pl-1 font-mono text-[11px] font-bold tabular-nums"
+                  style={{ borderColor: teamColor(d.team) }}
+                >
+                  {d.number ?? "–"}
+                </span>
+                <span className="font-semibold">{d.code ?? d.full_name}</span>
+                <span className="text-muted-foreground">
+                  {d.full_name}
+                  {d.team ? ` · ${d.team}` : ""}
+                  {taken ? " — already picked" : ""}
+                </span>
+              </span>
             </SelectItem>
           );
         })}
