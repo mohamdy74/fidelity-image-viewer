@@ -233,3 +233,18 @@
   border-left: 4px solid var(--color-border);
   background-image: var(--gradient-carbon);
 }
+
+@keyframes start-light {
+  0%, 100% { background: var(--color-secondary); box-shadow: none; }
+  1%, 75% { background: var(--color-primary); box-shadow: 0 0 16px var(--color-primary); }
+  76% { background: var(--color-secondary); box-shadow: none; }
+}
+.start-light {
+  background: var(--color-secondary);
+  animation: start-light-seq 5s infinite;
+}
+@keyframes start-light-seq {
+  0% { background: var(--color-secondary); box-shadow: none; }
+  1%, 70% { background: var(--color-primary); box-shadow: 0 0 16px var(--color-primary); }
+  71%, 100% { background: var(--color-secondary); box-shadow: none; }
+}

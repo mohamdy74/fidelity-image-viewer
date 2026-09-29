@@ -94,6 +94,16 @@ function Leaderboard() {
                 {entry.races} scored · best {entry.best ?? 0}
               </p>
             </div>
+            {entry.change != null && entry.change !== 0 && (
+              <span
+                className={cn(
+                  "font-mono text-xs font-bold",
+                  entry.change > 0 ? "text-gold" : "text-primary",
+                )}
+              >
+                {entry.change > 0 ? `▲${entry.change}` : `▼${-entry.change}`}
+              </span>
+            )}
             <span className="font-mono text-xl font-bold tabular-nums">{entry.points}</span>
           </div>
         ))}

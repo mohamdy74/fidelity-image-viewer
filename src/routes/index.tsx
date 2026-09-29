@@ -51,7 +51,8 @@ function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
         <div className="relative mx-auto max-w-5xl px-4 py-16 sm:py-24">
-          <p className="font-mono text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+          <StartLights />
+          <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.3em] text-primary">
             Season {races[0]?.season ?? 2026}
           </p>
           <h1 className="mt-2 text-4xl leading-none sm:text-6xl">
@@ -180,6 +181,21 @@ function InfoCard({
       </div>
       <p className="mt-2 font-display text-lg font-extrabold italic uppercase">{value}</p>
       <p className="text-sm text-muted-foreground">{sub}</p>
+    </div>
+  );
+}
+
+function StartLights() {
+  return (
+    <div className="flex gap-2" aria-hidden>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="rounded-md bg-background/90 p-1.5 shadow-lg">
+          <span
+            className="start-light block h-5 w-5 rounded-full sm:h-7 sm:w-7"
+            style={{ animationDelay: `${i * 0.6}s` }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
