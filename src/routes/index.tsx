@@ -192,7 +192,7 @@ function StartLights() {
         <div key={i} className="rounded-md bg-background/90 p-1.5 shadow-lg">
           <span
             className="start-light block h-5 w-5 rounded-full sm:h-7 sm:w-7"
-            style={{ animationDelay: `${i * 0.6}s` }}
+            style={{ animationName: `sl${i}` }}
           />
         </div>
       ))}
