@@ -154,7 +154,7 @@ function Predict() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
         Round {race.round}
       </p>
