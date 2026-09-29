@@ -58,6 +58,7 @@ export type LeaderboardEntry = {
   points: number;
   races: number;
   best: number | null;
+  change: number | null;
 };
 
 export const leaderboardQuery = queryOptions({
@@ -68,6 +69,10 @@ export const leaderboardQuery = queryOptions({
         supabase.from("scores").select("user_id, race_id, points"),
         supabase.from("profiles").select("id, display_name, avatar_url"),
       ]);
+    const { data: raceRows } = await supabase
+      .from("races")
+      .select("id, round")
+      .eq("season", SEASON);
     if (sErr) throw sErr;
     if (pErr) throw pErr;
 
@@ -80,6 +85,7 @@ export const leaderboardQuery = queryOptions({
         points: 0,
         races: 0,
         best: null,
+        change: null,
       });
     }
     for (const s of scores ?? []) {
@@ -90,7 +96,28 @@ export const leaderboardQuery = queryOptions({
       entry.best = entry.best == null ? s.points : Math.max(entry.best, s.points);
     }
 
-    return [...byUser.values()].sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+    const sort = (a: LeaderboardEntry, b: LeaderboardEntry) =>
+      b.points - a.points || a.name.localeCompare(b.name);
+    const list = [...byUser.values()].sort(sort);
+
+    // Rank movement vs. standings before the latest scored race.
+    const roundOf = new Map((raceRows ?? []).map((r) => [r.id, r.round]));
+    const latest = Math.max(0, ...(scores ?? []).map((s) => roundOf.get(s.race_id) ?? 0));
+    if (latest > 0) {
+      const prevPts = new Map<string, number>();
+      for (const s of scores ?? []) {
+        if ((roundOf.get(s.race_id) ?? 0) === latest) continue;
+        prevPts.set(s.user_id, (prevPts.get(s.user_id) ?? 0) + s.points);
+      }
+      const prev = [...list].sort(
+        (a, b) =>
+          (prevPts.get(b.userId) ?? 0) - (prevPts.get(a.userId) ?? 0) ||
+          a.name.localeCompare(b.name),
+      );
+      const prevRank = new Map(prev.map((e, i) => [e.userId, i]));
+      list.forEach((e, i) => (e.change = (prevRank.get(e.userId) ?? i) - i));
+    }
+    return list;
   },
 });
 
