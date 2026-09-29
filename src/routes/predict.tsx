@@ -170,37 +170,15 @@ function Predict() {
         <Countdown target={race.race_at} label="Top 10 / bonus picks close in" />
       </div>
 
-      <section className="carbon-panel mt-8 rounded-lg p-5">
-        <h2 className="text-xl">Top 10 finishing order</h2>
-        <div className="mt-4 space-y-2">
-          {top10.map((value, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "w-8 shrink-0 rounded-sm py-1 text-center font-mono text-sm font-bold",
-                  index === 0 ? "bg-gold text-gold-foreground" : "bg-secondary",
-                )}
-              >
-                {index + 1}
-              </span>
-              <DriverSelect
-                drivers={drivers ?? []}
-                value={value}
-                disabled={raceLocked}
-                exclude={top10.filter((d, i) => i !== index && d !== EMPTY)}
-                onChange={(v) =>
-                  setTop10((prev) => prev.map((p, i) => (i === index ? v : p)))
-                }
-              />
-            </div>
-          ))}
-        </div>
-        {duplicates && (
-          <p className="mt-3 text-sm text-destructive">
-            A driver is selected more than once.
-          </p>
-        )}
-      </section>
+      <GridPicker
+        drivers={drivers ?? []}
+        top10={top10}
+        setTop10={setTop10}
+        locked={raceLocked}
+      />
+      {duplicates && (
+        <p className="mt-3 text-sm text-destructive">A driver is selected more than once.</p>
+      )}
 
       <section className="carbon-panel mt-6 rounded-lg p-5">
         <h2 className="text-xl">Bonus picks</h2>
