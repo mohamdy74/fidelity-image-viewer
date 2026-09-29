@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, nextRace, racesQuery, type Driver } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { teamColor } from "@/lib/teams";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -170,37 +171,15 @@ function Predict() {
         <Countdown target={race.race_at} label="Top 10 / bonus picks close in" />
       </div>
 
-      <section className="carbon-panel mt-8 rounded-lg p-5">
-        <h2 className="text-xl">Top 10 finishing order</h2>
-        <div className="mt-4 space-y-2">
-          {top10.map((value, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "w-8 shrink-0 rounded-sm py-1 text-center font-mono text-sm font-bold",
-                  index === 0 ? "bg-gold text-gold-foreground" : "bg-secondary",
-                )}
-              >
-                {index + 1}
-              </span>
-              <DriverSelect
-                drivers={drivers ?? []}
-                value={value}
-                disabled={raceLocked}
-                exclude={top10.filter((d, i) => i !== index && d !== EMPTY)}
-                onChange={(v) =>
-                  setTop10((prev) => prev.map((p, i) => (i === index ? v : p)))
-                }
-              />
-            </div>
-          ))}
-        </div>
-        {duplicates && (
-          <p className="mt-3 text-sm text-destructive">
-            A driver is selected more than once.
-          </p>
-        )}
-      </section>
+      <GridPicker
+        drivers={drivers ?? []}
+        top10={top10}
+        setTop10={setTop10}
+        locked={raceLocked}
+      />
+      {duplicates && (
+        <p className="mt-3 text-sm text-destructive">A driver is selected more than once.</p>
+      )}
 
       <section className="carbon-panel mt-6 rounded-lg p-5">
         <h2 className="text-xl">Bonus picks</h2>
@@ -301,4 +280,134 @@ function DriverSelect({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <main className="mx-auto max-w-3xl px-4 py-16">{children}</main>;
+}
+
+function GridPicker({
+  drivers,
+  top10,
+  setTop10,
+  locked,
+}: {
+  drivers: Driver[];
+  top10: string[];
+  setTop10: React.Dispatch<React.SetStateAction<string[]>>;
+  locked: boolean;
+}) {
+  const [active, setActive] = useState(() => {
+    const i = top10.indexOf(EMPTY);
+    return i === -1 ? 0 : i;
+  });
+  const byId = new Map(drivers.map((d) => [d.id, d]));
+  const used = new Set(top10.filter((d) => d !== EMPTY));
+
+  function place(id: string) {
+    if (locked) return;
+    setTop10((prev) => {
+      const next = prev.map((p) => (p === id ? EMPTY : p));
+      next[active] = id;
+      const empty = next.findIndex((p, i) => p === EMPTY && i > active);
+      const first = next.indexOf(EMPTY);
+      setActive(empty !== -1 ? empty : first !== -1 ? first : active);
+      return next;
+    });
+  }
+
+  function clearSlot(i: number) {
+    setTop10((prev) => prev.map((p, idx) => (idx === i ? EMPTY : p)));
+    setActive(i);
+  }
+
+  return (
+    <section className="carbon-panel mt-8 rounded-lg p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl">Starting grid</h2>
+        {!locked && used.size > 0 && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setTop10(Array(10).fill(EMPTY));
+              setActive(0);
+            }}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Tap a slot, then tap a driver. Tap a filled slot again to clear it.
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2">
+        {top10.map((id, i) => {
+          const d = id !== EMPTY ? byId.get(id) : undefined;
+          const isActive = i === active && !locked;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={locked}
+              onClick={() => (d && i === active ? clearSlot(i) : setActive(i))}
+              className={cn(
+                "flex items-center gap-2 rounded-md border bg-background/70 px-2 py-2 text-left transition",
+                i % 2 === 1 && "mt-5",
+                isActive && "border-primary ring-1 ring-primary",
+              )}
+              style={d ? { borderLeft: `4px solid ${teamColor(d.team)}` } : undefined}
+            >
+              <span
+                className={cn(
+                  "w-7 shrink-0 rounded-sm py-0.5 text-center font-mono text-xs font-bold",
+                  i === 0 ? "bg-gold text-gold-foreground" : "bg-secondary",
+                )}
+              >
+                P{i + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-display text-sm font-extrabold italic uppercase">
+                  {d ? (d.code ?? d.full_name) : "—"}
+                </span>
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  {d ? d.team : isActive ? "Pick a driver" : "Empty"}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {!locked && (
+        <>
+          <p className="mt-5 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Drivers · filling P{active + 1}
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {drivers.map((d) => {
+              const taken = used.has(d.id);
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  disabled={taken}
+                  onClick={() => place(d.id)}
+                  className={cn(
+                    "rounded-md border bg-background/70 px-2 py-2 text-left transition hover:border-primary",
+                    taken && "opacity-30",
+                  )}
+                  style={{ borderTop: `3px solid ${teamColor(d.team)}` }}
+                >
+                  <span className="block font-display text-sm font-extrabold italic uppercase">
+                    {d.code ?? d.full_name.split(" ").pop()}
+                  </span>
+                  <span className="block truncate text-[10px] text-muted-foreground">
+                    {d.full_name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </section>
+  );
 }

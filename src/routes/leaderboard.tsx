@@ -37,6 +37,30 @@ function Leaderboard() {
         {scored} race{scored === 1 ? "" : "s"} scored
       </p>
 
+      {board && board.length > 0 && (
+        <div className="mt-8 grid grid-cols-3 items-end gap-2">
+          {[1, 0, 2].map((i) => {
+            const e = board[i];
+            if (!e) return <div key={i} />;
+            const color = ["var(--gold)", "var(--silver)", "var(--bronze)"][i];
+            return (
+              <div key={e.userId} className="text-center">
+                <p className="truncate font-display text-sm font-extrabold italic uppercase">
+                  {e.name}
+                </p>
+                <p className="font-mono text-lg font-bold tabular-nums">{e.points}</p>
+                <div
+                  className="mt-1 flex items-start justify-center rounded-t-md pt-2 font-display text-2xl font-extrabold italic text-background"
+                  style={{ background: color, height: [96, 72, 56][i] }}
+                >
+                  {i + 1}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="mt-8 space-y-2">
         {isLoading && <p className="text-sm text-muted-foreground">Loading timing tower…</p>}
         {!isLoading && !board?.length && (
