@@ -348,7 +348,7 @@ function GridPicker({
         Tap a slot, then tap a driver. Tap a filled slot again to clear it.
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2">
+      <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2.5">
         {top10.map((id, i) => {
           const d = id !== EMPTY ? byId.get(id) : undefined;
           const isActive = i === active && !locked;
@@ -359,25 +359,36 @@ function GridPicker({
               disabled={locked}
               onClick={() => (d && i === active ? clearSlot(i) : setActive(i))}
               className={cn(
-                "flex items-center gap-2 rounded-md border bg-background/70 px-2 py-2 text-left transition",
+                "flex min-h-14 items-center gap-2.5 overflow-hidden rounded-md border bg-background/80 py-2 pr-2.5 text-left transition",
                 i % 2 === 1 && "mt-5",
-                isActive && "border-primary ring-1 ring-primary",
+                isActive && "border-primary ring-2 ring-primary/70",
+                !d && !isActive && "border-dashed",
               )}
-              style={d ? { borderLeft: `4px solid ${teamColor(d.team)}` } : undefined}
+              style={{
+                borderLeft: `5px solid ${d ? teamColor(d.team) : "transparent"}`,
+                paddingLeft: "0.5rem",
+              }}
             >
               <span
                 className={cn(
-                  "w-7 shrink-0 rounded-sm py-0.5 text-center font-mono text-xs font-bold",
-                  i === 0 ? "bg-gold text-gold-foreground" : "bg-secondary",
+                  "w-8 shrink-0 rounded-sm py-1 text-center font-mono text-xs font-bold tabular-nums",
+                  i === 0 ? "bg-gold text-gold-foreground" : "bg-secondary text-foreground",
                 )}
               >
                 P{i + 1}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-display text-sm font-extrabold italic uppercase">
-                  {d ? (d.code ?? d.full_name) : "—"}
+                <span className="flex items-baseline gap-1.5">
+                  {d?.number != null && (
+                    <span className="font-mono text-[11px] font-bold tabular-nums text-muted-foreground">
+                      #{d.number}
+                    </span>
+                  )}
+                  <span className="min-w-0 truncate font-display text-base font-extrabold italic uppercase leading-tight">
+                    {d ? (d.code ?? d.full_name) : "—"}
+                  </span>
                 </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
+                <span className="block truncate text-[11px] font-medium text-muted-foreground">
                   {d ? d.team : isActive ? "Pick a driver" : "Empty"}
                 </span>
               </span>
@@ -388,10 +399,10 @@ function GridPicker({
 
       {!locked && (
         <>
-          <p className="mt-5 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Drivers · filling P{active + 1}
+          <p className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Drivers · filling <span className="text-primary">P{active + 1}</span>
           </p>
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {drivers.map((d) => {
               const taken = used.has(d.id);
               return (
@@ -401,15 +412,21 @@ function GridPicker({
                   disabled={taken}
                   onClick={() => place(d.id)}
                   className={cn(
-                    "rounded-md border bg-background/70 px-2 py-2 text-left transition hover:border-primary",
-                    taken && "opacity-30",
+                    "relative flex min-h-16 flex-col justify-center overflow-hidden rounded-md border bg-background/80 px-2.5 py-2.5 pr-9 text-left transition hover:border-primary active:scale-[0.98]",
+                    taken && "opacity-35",
                   )}
-                  style={{ borderTop: `3px solid ${teamColor(d.team)}` }}
+                  style={{ borderTop: `4px solid ${teamColor(d.team)}` }}
                 >
-                  <span className="block font-display text-sm font-extrabold italic uppercase">
+                  <span
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 font-display text-lg font-extrabold italic tabular-nums leading-none opacity-70"
+                    style={{ color: teamColor(d.team) }}
+                  >
+                    {d.number ?? ""}
+                  </span>
+                  <span className="block font-display text-base font-extrabold italic uppercase leading-tight">
                     {d.code ?? d.full_name.split(" ").pop()}
                   </span>
-                  <span className="block truncate text-[10px] text-muted-foreground">
+                  <span className="block truncate text-[11px] font-medium text-muted-foreground">
                     {d.full_name}
                   </span>
                 </button>
