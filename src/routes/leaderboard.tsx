@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { leaderboardQuery, racesQuery } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { FahlBadge } from "@/components/SiteHeader";
+import { useState } from "react";
 
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
@@ -28,6 +30,7 @@ function Leaderboard() {
   const { data: races } = useQuery(racesQuery);
   const { user } = useAuth();
 
+  const [open, setOpen] = useState<string | null>(null);
   const scored = races?.filter((r) => r.has_results).length ?? 0;
 
   return (
@@ -69,10 +72,12 @@ function Leaderboard() {
           </p>
         )}
         {board?.map((entry, index) => (
-          <div
-            key={entry.userId}
+          <div key={entry.userId}>
+          <button
+            type="button"
+            onClick={() => setOpen(open === entry.userId ? null : entry.userId)}
             className={cn(
-              "tower-row flex items-center gap-3 rounded-md px-3 py-3",
+              "tower-row flex w-full text-left items-center gap-3 rounded-md px-3 py-3",
               index === 0 && "border-l-gold",
               index > 0 && index < 3 && "border-l-primary",
               entry.userId === user?.id && "ring-1 ring-primary/60",
@@ -87,9 +92,12 @@ function Leaderboard() {
               {index + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-display text-sm font-extrabold italic uppercase">
-                {entry.name}
-              </p>
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="truncate font-display text-sm font-extrabold italic uppercase">
+                  {entry.name}
+                </p>
+                {entry.fahl && <FahlBadge />}
+              </div>
               <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
                 {entry.races} scored · best {entry.best ?? 0}
               </p>
@@ -105,6 +113,17 @@ function Leaderboard() {
               </span>
             )}
             <span className="font-mono text-xl font-bold tabular-nums">{entry.points}</span>
+          </button>
+          {open === entry.userId && (
+            <div className="carbon-panel mt-1 grid grid-cols-4 gap-1 rounded-md p-2 sm:grid-cols-6">
+              {(races ?? []).filter((r) => r.has_results).map((r) => (
+                <div key={r.id} className="rounded-sm bg-muted/60 px-1 py-1 text-center">
+                  <p className="font-mono text-[10px] uppercase text-muted-foreground">R{r.round}</p>
+                  <p className="font-mono text-sm font-bold tabular-nums">{entry.byRound[r.round] ?? "–"}</p>
+                </div>
+              ))}
+            </div>
+          )}
           </div>
         ))}
       </div>

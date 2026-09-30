@@ -215,12 +215,9 @@
 }
 
 @utility kerb-strip {
-  height: 6px;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--color-primary) 0 18px,
-    var(--color-foreground) 18px 36px
-  );
+  height: 2px;
+  background-image: linear-gradient(90deg, transparent, var(--color-primary) 30%, var(--color-gold) 50%, var(--color-primary) 70%, transparent);
+  box-shadow: 0 0 12px var(--color-primary);
 }
 
 @utility grid-box {
@@ -266,3 +263,9 @@
 @keyframes sl2 { 0%,24% { background: var(--color-secondary); box-shadow: none; } 25%,70% { background: var(--color-primary); box-shadow: 0 0 16px var(--color-primary); } 71%,100% { background: var(--color-secondary); box-shadow: none; } }
 @keyframes sl3 { 0%,36% { background: var(--color-secondary); box-shadow: none; } 37%,70% { background: var(--color-primary); box-shadow: 0 0 16px var(--color-primary); } 71%,100% { background: var(--color-secondary); box-shadow: none; } }
 @keyframes sl4 { 0%,48% { background: var(--color-secondary); box-shadow: none; } 49%,70% { background: var(--color-primary); box-shadow: 0 0 16px var(--color-primary); } 71%,100% { background: var(--color-secondary); box-shadow: none; } }
+
+.fahl-badge {
+  background-image: linear-gradient(135deg, oklch(0.93 0.14 95), var(--gold) 45%, oklch(0.7 0.14 70));
+  color: var(--gold-foreground);
+  box-shadow: 0 0 14px oklch(0.879 0.169 92 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.5);
+}

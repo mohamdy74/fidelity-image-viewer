@@ -38,6 +38,7 @@ function Home() {
   const upcoming = nextRace(races);
   const previous = lastRace(races);
   const leader = board?.[0];
+  const fahl = board?.find((e) => e.fahl);
 
   return (
     <main>
@@ -140,7 +141,7 @@ function Home() {
             icon={<Trophy className="h-4 w-4 text-gold" />}
             label="League leader"
             value={leader ? leader.name : "No scores yet"}
-            sub={leader ? `${leader.points} pts` : "Be the first to score"}
+            sub={leader ? `${leader.points} pts${fahl ? ` · 👑 فحل الجولة: ${fahl.name}` : ""}` : "Be the first to score"}
           />
           <InfoCard
             icon={<Flag className="h-4 w-4 text-primary" />}
