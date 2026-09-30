@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Countdown } from "@/components/Countdown";
@@ -62,6 +62,24 @@ function Predict() {
     },
   });
 
+  const { data: lastPicks } = useQuery({
+    queryKey: ["last-prediction", race?.id, user?.id],
+    enabled: !!race && !!user && !!races,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("race_id, top10, pole_driver_id, fastest_lap_driver_id, dnf_driver_id")
+        .eq("user_id", user!.id)
+        .neq("race_id", race!.id);
+      if (error) throw error;
+      const round = new Map((races ?? []).map((r) => [r.id, r.round]));
+      const prev = (data ?? [])
+        .filter((p) => (round.get(p.race_id) ?? 0) < race!.round)
+        .sort((a, b) => (round.get(b.race_id) ?? 0) - (round.get(a.race_id) ?? 0));
+      return prev[0] ?? null;
+    },
+  });
+
   const [top10, setTop10] = useState<string[]>(Array(10).fill(EMPTY));
   const [pole, setPole] = useState(EMPTY);
   const [fastestLap, setFastestLap] = useState(EMPTY);
@@ -116,6 +134,16 @@ function Predict() {
   const duplicates = usedInTop10.length !== new Set(usedInTop10).size;
   const dnfInTop10 = dnf !== EMPTY && usedInTop10.includes(dnf);
 
+  function repeatLast() {
+    if (!lastPicks) return;
+    const saved = lastPicks.top10 ?? [];
+    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
+    if (!poleLocked) setPole(lastPicks.pole_driver_id ?? EMPTY);
+    setFastestLap(lastPicks.fastest_lap_driver_id ?? EMPTY);
+    setDnf(lastPicks.dnf_driver_id ?? EMPTY);
+    toast.success("Loaded your picks from the last race.");
+  }
+
   async function save() {
     if (duplicates) {
       toast.error("Each driver can only appear once in your top 10.");
@@ -164,7 +192,8 @@ function Predict() {
         {race.country ? ` · ${race.country}` : ""}
       </p>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <TrackStatus target={race.race_at} />
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {race.qualifying_at && (
           <Countdown target={race.qualifying_at} label="Pole pick closes in" />
         )}
@@ -176,12 +205,13 @@ function Predict() {
         top10={top10}
         setTop10={setTop10}
         locked={raceLocked}
+        onRepeat={lastPicks ? repeatLast : undefined}
       />
       {duplicates && (
         <p className="mt-3 text-sm text-destructive">A driver is selected more than once.</p>
       )}
 
-      <section className="carbon-panel mt-6 rounded-lg p-5">
+      <section className="carbon-panel mt-6 rounded-lg p-4 sm:p-5">
         <h2 className="text-xl">Bonus picks</h2>
         <div className="mt-4 space-y-4">
           <Field label={poleLocked ? "Pole position (locked)" : "Pole position (+3)"}>
@@ -192,7 +222,7 @@ function Predict() {
               onChange={setPole}
             />
           </Field>
-          <Field label="Fastest lap (+3)">
+          <Field label="Fastest lap (+3)" purple>
             <DriverSelect
               drivers={drivers ?? []}
               value={fastestLap}
@@ -217,10 +247,13 @@ function Predict() {
         </div>
       </section>
 
-      <div className="sticky bottom-4 mt-6">
+      <div
+        className="sticky mt-6 rounded-lg bg-background/80 p-2 backdrop-blur-md"
+        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
         <Button
           size="lg"
-          className="w-full"
+          className="h-12 w-full text-base"
           disabled={saving || raceLocked}
           onClick={save}
         >
@@ -231,10 +264,23 @@ function Predict() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  purple,
+}: {
+  label: string;
+  children: React.ReactNode;
+  purple?: boolean;
+}) {
   return (
     <div>
-      <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <p
+        className={cn(
+          "mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest",
+          purple ? "text-purple" : "text-muted-foreground",
+        )}
+      >
         {label}
       </p>
       {children}
@@ -292,21 +338,52 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <main className="mx-auto max-w-3xl px-4 py-16">{children}</main>;
 }
 
+function TrackStatus({ target }: { target: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const left = new Date(target).getTime() - now;
+  const state =
+    left <= 0
+      ? { label: "Locked · Formation lap", color: "var(--color-primary)" }
+      : left < 2 * 3600_000
+        ? { label: "Closing soon", color: "var(--gold)" }
+        : { label: "Track open", color: "var(--track-green)" };
+  return (
+    <div
+      className="mt-4 flex items-center gap-2 rounded-md border px-3 py-2 font-mono text-xs font-bold uppercase tracking-widest"
+      style={{ borderColor: state.color, color: state.color }}
+    >
+      <span
+        className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full"
+        style={{ background: state.color, boxShadow: `0 0 10px ${state.color}` }}
+      />
+      {state.label}
+    </div>
+  );
+}
+
 function GridPicker({
   drivers,
   top10,
   setTop10,
   locked,
+  onRepeat,
 }: {
   drivers: Driver[];
   top10: string[];
   setTop10: React.Dispatch<React.SetStateAction<string[]>>;
   locked: boolean;
+  onRepeat?: (() => void) | undefined;
 }) {
   const [active, setActive] = useState(() => {
     const i = top10.indexOf(EMPTY);
     return i === -1 ? 0 : i;
   });
+  const [drag, setDrag] = useState<{ from: number; over: number | null } | null>(null);
+  const dragRef = useRef<{ from: number; x: number; y: number; moved: boolean } | null>(null);
   const byId = new Map(drivers.map((d) => [d.id, d]));
   const used = new Set(top10.filter((d) => d !== EMPTY));
 
@@ -327,114 +404,177 @@ function GridPicker({
     setActive(i);
   }
 
+  function slotAt(x: number, y: number): number | null {
+    const el = document.elementFromPoint(x, y)?.closest("[data-slot]");
+    return el ? Number(el.getAttribute("data-slot")) : null;
+  }
+
+  function onDown(e: React.PointerEvent, i: number) {
+    if (locked || top10[i] === EMPTY) return;
+    dragRef.current = { from: i, x: e.clientX, y: e.clientY, moved: false };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onMove(e: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    if (!d.moved && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8) return;
+    d.moved = true;
+    setDrag({ from: d.from, over: slotAt(e.clientX, e.clientY) });
+  }
+  function onUp(e: React.PointerEvent, i: number) {
+    const d = dragRef.current;
+    dragRef.current = null;
+    setDrag(null);
+    if (!d || !d.moved) {
+      const dr = top10[i] !== EMPTY;
+      if (dr && i === active) clearSlot(i);
+      else setActive(i);
+      return;
+    }
+    const to = slotAt(e.clientX, e.clientY);
+    if (to == null || to === d.from) return;
+    setTop10((prev) => {
+      const next = [...prev];
+      [next[d.from], next[to]] = [next[to]!, next[d.from]!];
+      return next;
+    });
+    setActive(to);
+    navigator.vibrate?.(15);
+  }
+
   return (
-    <section className="carbon-panel mt-8 rounded-lg p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl">Starting grid</h2>
-        {!locked && used.size > 0 && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setTop10(Array(10).fill(EMPTY));
-              setActive(0);
-            }}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Tap a slot, then tap a driver. Tap a filled slot again to clear it.
-      </p>
-
-      <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2.5">
-        {top10.map((id, i) => {
-          const d = id !== EMPTY ? byId.get(id) : undefined;
-          const isActive = i === active && !locked;
-          return (
-            <button
-              key={i}
-              type="button"
-              disabled={locked}
-              onClick={() => (d && i === active ? clearSlot(i) : setActive(i))}
-              className={cn(
-                "flex min-h-14 items-center gap-2.5 overflow-hidden rounded-md border bg-background/80 py-2 pr-2.5 text-left transition",
-                i % 2 === 1 && "mt-5",
-                isActive && "border-primary ring-2 ring-primary/70",
-                !d && !isActive && "border-dashed",
-              )}
-              style={{
-                borderLeft: `5px solid ${d ? teamColor(d.team) : "transparent"}`,
-                paddingLeft: "0.5rem",
-              }}
-            >
-              <span
-                className={cn(
-                  "w-8 shrink-0 rounded-sm py-1 text-center font-mono text-xs font-bold tabular-nums",
-                  i === 0 ? "bg-gold text-gold-foreground" : "bg-secondary text-foreground",
-                )}
+    <section className="carbon-panel mt-8 overflow-hidden rounded-lg">
+      <div className="kerb-strip" />
+      <div className="p-3 sm:p-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xl">Starting grid</h2>
+          <div className="flex shrink-0 gap-2">
+            {!locked && onRepeat && (
+              <Button size="sm" variant="secondary" onClick={onRepeat}>
+                Repeat last
+              </Button>
+            )}
+            {!locked && used.size > 0 && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setTop10(Array(10).fill(EMPTY));
+                  setActive(0);
+                }}
               >
-                P{i + 1}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-1.5">
-                  {d?.number != null && (
-                    <span className="font-mono text-[11px] font-bold tabular-nums text-muted-foreground">
-                      #{d.number}
-                    </span>
-                  )}
-                  <span className="min-w-0 truncate font-display text-base font-extrabold italic uppercase leading-tight">
-                    {d ? (d.code ?? d.full_name) : "—"}
-                  </span>
-                </span>
-                <span className="block truncate text-[11px] font-medium text-muted-foreground">
-                  {d ? d.team : isActive ? "Pick a driver" : "Empty"}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tap a slot, then a driver. Drag a car onto another slot to swap positions.
+        </p>
 
-      {!locked && (
-        <>
-          <p className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Drivers · filling <span className="text-primary">P{active + 1}</span>
-          </p>
-          <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {drivers.map((d) => {
-              const taken = used.has(d.id);
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  disabled={taken}
-                  onClick={() => place(d.id)}
+        <div className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-2 sm:gap-x-3">
+          {top10.map((id, i) => {
+            const d = id !== EMPTY ? byId.get(id) : undefined;
+            const isActive = i === active && !locked;
+            const color = d ? teamColor(d.team) : "transparent";
+            return (
+              <button
+                key={i}
+                type="button"
+                data-slot={i}
+                disabled={locked}
+                onPointerDown={(e) => onDown(e, i)}
+                onPointerMove={onMove}
+                onPointerUp={(e) => onUp(e, i)}
+                onPointerCancel={() => {
+                  dragRef.current = null;
+                  setDrag(null);
+                }}
+                className={cn(
+                  "flex h-16 select-none items-center gap-2 overflow-hidden rounded-md border bg-background/70 pr-2 text-left transition",
+                  i % 2 === 1 && "mt-5",
+                  isActive && "border-primary ring-2 ring-primary/70",
+                  !d && !isActive && "border-dashed",
+                  drag?.from === i && "drag-ghost",
+                  drag && drag.over === i && drag.from !== i && "drop-target",
+                )}
+                style={{
+                  borderLeft: `5px solid ${color}`,
+                  paddingLeft: "0.5rem",
+                  touchAction: d && !locked ? "none" : "auto",
+                  boxShadow: d
+                    ? `inset 0 0 24px -8px color-mix(in oklch, ${color} 55%, transparent), 0 0 14px -6px ${color}`
+                    : undefined,
+                  borderBottom: "2px solid oklch(1 0 0 / 0.35)",
+                }}
+              >
+                <span
                   className={cn(
-                    "relative flex min-h-16 flex-col justify-center overflow-hidden rounded-md border bg-background/80 px-2.5 py-2.5 pr-9 text-left transition hover:border-primary active:scale-[0.98]",
-                    taken && "opacity-35",
+                    "w-8 shrink-0 rounded-sm py-1 text-center font-mono text-xs font-bold tabular-nums",
+                    i === 0 ? "bg-gold text-gold-foreground" : "bg-secondary text-foreground",
                   )}
-                  style={{ borderTop: `4px solid ${teamColor(d.team)}` }}
                 >
-                  <span
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 font-display text-lg font-extrabold italic tabular-nums leading-none opacity-70"
-                    style={{ color: teamColor(d.team) }}
-                  >
-                    {d.number ?? ""}
-                  </span>
-                  <span className="block font-display text-base font-extrabold italic uppercase leading-tight">
-                    {d.code ?? d.full_name.split(" ").pop()}
+                  P{i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-1.5">
+                    {d?.number != null && (
+                      <span className="font-mono text-[11px] font-bold tabular-nums text-muted-foreground">
+                        #{d.number}
+                      </span>
+                    )}
+                    <span className="min-w-0 truncate font-display text-base font-extrabold italic uppercase leading-tight">
+                      {d ? (d.code ?? d.full_name) : "—"}
+                    </span>
                   </span>
                   <span className="block truncate text-[11px] font-medium text-muted-foreground">
-                    {d.full_name}
+                    {d ? d.team : isActive ? "Pick a driver" : "Empty"}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {!locked && (
+          <>
+            <p className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Drivers · filling <span className="text-primary">P{active + 1}</span>
+            </p>
+            <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
+              {drivers.map((d) => {
+                const taken = used.has(d.id);
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    disabled={taken}
+                    onClick={() => place(d.id)}
+                    className={cn(
+                      "relative flex h-16 flex-col justify-center overflow-hidden rounded-md border bg-background/70 px-2.5 pr-9 text-left transition hover:border-primary active:scale-[0.98]",
+                      taken && "opacity-35",
+                    )}
+                    style={{ borderLeft: `5px solid ${teamColor(d.team)}` }}
+                  >
+                    <span
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 font-display text-lg font-extrabold italic tabular-nums leading-none opacity-70"
+                      style={{ color: teamColor(d.team) }}
+                    >
+                      {d.number ?? ""}
+                    </span>
+                    <span className="block font-display text-base font-extrabold italic uppercase leading-tight">
+                      {d.code ?? d.full_name.split(" ").pop()}
+                    </span>
+                    <span className="block truncate text-[11px] font-medium text-muted-foreground">
+                      {d.full_name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }
