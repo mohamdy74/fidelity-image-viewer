@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Countdown } from "@/components/Countdown";
@@ -62,6 +62,24 @@ function Predict() {
     },
   });
 
+  const { data: lastPicks } = useQuery({
+    queryKey: ["last-prediction", race?.id, user?.id],
+    enabled: !!race && !!user && !!races,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("race_id, top10, pole_driver_id, fastest_lap_driver_id, dnf_driver_id")
+        .eq("user_id", user!.id)
+        .neq("race_id", race!.id);
+      if (error) throw error;
+      const round = new Map((races ?? []).map((r) => [r.id, r.round]));
+      const prev = (data ?? [])
+        .filter((p) => (round.get(p.race_id) ?? 0) < race!.round)
+        .sort((a, b) => (round.get(b.race_id) ?? 0) - (round.get(a.race_id) ?? 0));
+      return prev[0] ?? null;
+    },
+  });
+
   const [top10, setTop10] = useState<string[]>(Array(10).fill(EMPTY));
   const [pole, setPole] = useState(EMPTY);
   const [fastestLap, setFastestLap] = useState(EMPTY);
@@ -116,6 +134,16 @@ function Predict() {
   const duplicates = usedInTop10.length !== new Set(usedInTop10).size;
   const dnfInTop10 = dnf !== EMPTY && usedInTop10.includes(dnf);
 
+  function repeatLast() {
+    if (!lastPicks) return;
+    const saved = lastPicks.top10 ?? [];
+    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
+    if (!poleLocked) setPole(lastPicks.pole_driver_id ?? EMPTY);
+    setFastestLap(lastPicks.fastest_lap_driver_id ?? EMPTY);
+    setDnf(lastPicks.dnf_driver_id ?? EMPTY);
+    toast.success("Loaded your picks from the last race.");
+  }
+
   async function save() {
     if (duplicates) {
       toast.error("Each driver can only appear once in your top 10.");
@@ -164,7 +192,8 @@ function Predict() {
         {race.country ? ` · ${race.country}` : ""}
       </p>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <TrackStatus target={race.race_at} />
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {race.qualifying_at && (
           <Countdown target={race.qualifying_at} label="Pole pick closes in" />
         )}
@@ -176,12 +205,13 @@ function Predict() {
         top10={top10}
         setTop10={setTop10}
         locked={raceLocked}
+        onRepeat={lastPicks ? repeatLast : undefined}
       />
       {duplicates && (
         <p className="mt-3 text-sm text-destructive">A driver is selected more than once.</p>
       )}
 
-      <section className="carbon-panel mt-6 rounded-lg p-5">
+      <section className="carbon-panel mt-6 rounded-lg p-4 sm:p-5">
         <h2 className="text-xl">Bonus picks</h2>
         <div className="mt-4 space-y-4">
           <Field label={poleLocked ? "Pole position (locked)" : "Pole position (+3)"}>
@@ -192,7 +222,7 @@ function Predict() {
               onChange={setPole}
             />
           </Field>
-          <Field label="Fastest lap (+3)">
+          <Field label="Fastest lap (+3)" purple>
             <DriverSelect
               drivers={drivers ?? []}
               value={fastestLap}
@@ -217,10 +247,13 @@ function Predict() {
         </div>
       </section>
 
-      <div className="sticky bottom-4 mt-6">
+      <div
+        className="sticky mt-6 rounded-lg bg-background/80 p-2 backdrop-blur-md"
+        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
         <Button
           size="lg"
-          className="w-full"
+          className="h-12 w-full text-base"
           disabled={saving || raceLocked}
           onClick={save}
         >
@@ -231,10 +264,23 @@ function Predict() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  purple,
+}: {
+  label: string;
+  children: React.ReactNode;
+  purple?: boolean;
+}) {
   return (
     <div>
-      <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <p
+        className={cn(
+          "mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest",
+          purple ? "text-purple" : "text-muted-foreground",
+        )}
+      >
         {label}
       </p>
       {children}
