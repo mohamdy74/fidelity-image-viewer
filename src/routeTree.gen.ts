@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as H2hRouteImport } from './routes/h2h'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as PredictRouteImport } from './routes/predict'
 import { Route as RulesRouteImport } from './routes/rules'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const H2hRoute = H2hRouteImport.update({
+  id: '/h2h',
+  path: '/h2h',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
@@ -44,6 +50,7 @@ const RulesRoute = RulesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/h2h': typeof H2hRoute
   '/leaderboard': typeof LeaderboardRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/h2h': typeof H2hRoute
   '/leaderboard': typeof LeaderboardRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
@@ -59,21 +67,24 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/h2h': typeof H2hRoute
   '/leaderboard': typeof LeaderboardRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/leaderboard' | '/predict' | '/rules'
+  fullPaths: '/' | '/auth' | '/h2h' | '/leaderboard' | '/predict' | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/leaderboard' | '/predict' | '/rules'
-  id: '__root__' | '/' | '/auth' | '/leaderboard' | '/predict' | '/rules'
+  to: '/' | '/auth' | '/h2h' | '/leaderboard' | '/predict' | '/rules'
+  id:
+    '__root__' | '/' | '/auth' | '/h2h' | '/leaderboard' | '/predict' | '/rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  H2hRoute: typeof H2hRoute
   LeaderboardRoute: typeof LeaderboardRoute
   PredictRoute: typeof PredictRoute
   RulesRoute: typeof RulesRoute
@@ -93,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/h2h': {
+      id: '/h2h'
+      path: '/h2h'
+      fullPath: '/h2h'
+      preLoaderRoute: typeof H2hRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboard': {
@@ -122,6 +140,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  H2hRoute: H2hRoute,
   LeaderboardRoute: LeaderboardRoute,
   PredictRoute: PredictRoute,
   RulesRoute: RulesRoute,
