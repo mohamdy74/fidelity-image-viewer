@@ -59,6 +59,8 @@ export type LeaderboardEntry = {
   races: number;
   best: number | null;
   change: number | null;
+  byRound: Record<number, number>;
+  fahl: boolean;
 };
 
 export const leaderboardQuery = queryOptions({
@@ -86,6 +88,8 @@ export const leaderboardQuery = queryOptions({
         races: 0,
         best: null,
         change: null,
+        byRound: {},
+        fahl: false,
       });
     }
     for (const s of scores ?? []) {
@@ -94,6 +98,18 @@ export const leaderboardQuery = queryOptions({
       entry.points += s.points;
       entry.races += 1;
       entry.best = entry.best == null ? s.points : Math.max(entry.best, s.points);
+    }
+
+    const rMap = new Map((raceRows ?? []).map((r) => [r.id, r.round]));
+    for (const s of scores ?? []) {
+      const e = byUser.get(s.user_id);
+      const rd = rMap.get(s.race_id);
+      if (e && rd != null) e.byRound[rd] = s.points;
+    }
+    const lastRd = Math.max(0, ...(scores ?? []).map((s) => rMap.get(s.race_id) ?? 0));
+    if (lastRd > 0) {
+      const top = Math.max(...[...byUser.values()].map((e) => e.byRound[lastRd] ?? -Infinity));
+      for (const e of byUser.values()) if (e.byRound[lastRd] === top) e.fahl = true;
     }
 
     const sort = (a: LeaderboardEntry, b: LeaderboardEntry) =>
