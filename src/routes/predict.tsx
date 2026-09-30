@@ -376,7 +376,7 @@ function GridPicker({
   top10: string[];
   setTop10: React.Dispatch<React.SetStateAction<string[]>>;
   locked: boolean;
-  onRepeat?: () => void;
+  onRepeat?: (() => void) | undefined;
 }) {
   const [active, setActive] = useState(() => {
     const i = top10.indexOf(EMPTY);
