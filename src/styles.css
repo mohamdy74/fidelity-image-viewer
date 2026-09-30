@@ -204,10 +204,36 @@
 }
 
 @utility carbon-panel {
-  background-image: var(--gradient-carbon);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--color-border);
+  background-image:
+    linear-gradient(145deg, oklch(0.26 0.016 281 / 0.72), oklch(0.17 0.015 280 / 0.82));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    var(--shadow-card),
+    inset 0 1px 0 oklch(1 0 0 / 0.06);
+  border: 1px solid oklch(0.573 0.239 28.5 / 0.22);
 }
+
+@utility kerb-strip {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-primary) 0 18px,
+    var(--color-foreground) 18px 36px
+  );
+}
+
+@utility grid-box {
+  position: relative;
+}
+
+:root {
+  --purple: oklch(0.6 0.2 300);
+  --track-green: oklch(0.72 0.19 150);
+}
+.text-purple { color: var(--purple); }
+.drag-ghost { opacity: 0.4; }
+.drop-target { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 @utility speed-gradient {
   background-image: var(--gradient-speed);
