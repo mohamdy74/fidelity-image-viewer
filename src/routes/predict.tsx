@@ -308,7 +308,7 @@ function DriverSelect({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={EMPTY}>— No pick —</SelectItem>
-        {drivers.map((d) => {
+        {sortByTeam(drivers).map((d) => {
           const taken = !!exclude?.includes(d.id) && d.id !== value;
           return (
             <SelectItem key={d.id} value={d.id} disabled={taken}>
