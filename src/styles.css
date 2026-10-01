@@ -129,10 +129,10 @@
   --team-aston: oklch(0.52 0.11 165);
   --team-alpine: oklch(0.65 0.15 240);
   --team-williams: oklch(0.6 0.17 255);
-  --team-haas: oklch(0.8 0.01 260);
+  --team-haas: oklch(0.99 0 0);
   --team-rb: oklch(0.6 0.15 270);
-  --team-audi: oklch(0.72 0.2 140);
-  --team-cadillac: oklch(0.7 0.03 90);
+  --team-audi: oklch(0.68 0.005 265);
+  --team-cadillac: oklch(0.32 0.004 280);
 }
 
 @layer base {
