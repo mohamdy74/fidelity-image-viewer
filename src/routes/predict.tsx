@@ -541,8 +541,47 @@ function GridPicker({
             <p className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Drivers · filling <span className="text-primary">P{active + 1}</span>
             </p>
-            <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
-              {drivers.map((d) => {
+
+            <div className="-mx-1 mt-2.5 flex gap-1.5 overflow-x-auto px-1 pb-1">
+              <button
+                type="button"
+                onClick={() => setTeamFilter(null)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest transition",
+                  teamFilter === null
+                    ? "border-primary text-primary"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                All
+              </button>
+              {teams.map((t) => {
+                const color = teamColor(sorted.find((d) => teamLabel(d.team) === t)?.team);
+                const on = teamFilter === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTeamFilter(on ? null : t)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest transition"
+                    style={{
+                      borderColor: on ? color : "var(--color-border)",
+                      color: on ? color : "var(--color-muted-foreground)",
+                      boxShadow: on ? `0 0 12px -4px ${color}` : undefined,
+                    }}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: color }}
+                    />
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
+              {deck.map((d) => {
                 const taken = used.has(d.id);
                 return (
                   <button
