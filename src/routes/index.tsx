@@ -4,6 +4,7 @@ import { Flag, Timer, Trophy } from "lucide-react";
 
 import heroImage from "@/assets/hero-f1.jpg";
 import { Countdown } from "@/components/Countdown";
+import { PickStatus } from "@/components/PickStatus";
 import { Button } from "@/components/ui/button";
 import { syncF1Data } from "@/lib/f1-sync.functions";
 import { lastRace, leaderboardQuery, nextRace, racesQuery } from "@/lib/queries";
