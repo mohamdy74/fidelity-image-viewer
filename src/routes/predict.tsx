@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, nextRace, racesQuery, type Driver } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { teamColor } from "@/lib/teams";
+import { sortByTeam, teamColor, teamLabel, teamsOf } from "@/lib/teams";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -178,6 +178,7 @@ function Predict() {
       return;
     }
     toast.success("Predictions locked in.");
+    navigator.vibrate?.([12, 40, 18]);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
@@ -308,7 +309,7 @@ function DriverSelect({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={EMPTY}>— No pick —</SelectItem>
-        {drivers.map((d) => {
+        {sortByTeam(drivers).map((d) => {
           const taken = !!exclude?.includes(d.id) && d.id !== value;
           return (
             <SelectItem key={d.id} value={d.id} disabled={taken}>
@@ -383,9 +384,13 @@ function GridPicker({
     return i === -1 ? 0 : i;
   });
   const [drag, setDrag] = useState<{ from: number; over: number | null } | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string | null>(null);
   const dragRef = useRef<{ from: number; x: number; y: number; moved: boolean } | null>(null);
   const byId = new Map(drivers.map((d) => [d.id, d]));
   const used = new Set(top10.filter((d) => d !== EMPTY));
+  const sorted = useMemo(() => sortByTeam(drivers), [drivers]);
+  const teams = useMemo(() => teamsOf(drivers), [drivers]);
+  const deck = teamFilter ? sorted.filter((d) => teamLabel(d.team) === teamFilter) : sorted;
 
   function place(id: string) {
     if (locked) return;
@@ -541,8 +546,47 @@ function GridPicker({
             <p className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Drivers · filling <span className="text-primary">P{active + 1}</span>
             </p>
-            <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
-              {drivers.map((d) => {
+
+            <div className="-mx-1 mt-2.5 flex gap-1.5 overflow-x-auto px-1 pb-1">
+              <button
+                type="button"
+                onClick={() => setTeamFilter(null)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest transition",
+                  teamFilter === null
+                    ? "border-primary text-primary"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                All
+              </button>
+              {teams.map((t) => {
+                const color = teamColor(sorted.find((d) => teamLabel(d.team) === t)?.team);
+                const on = teamFilter === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTeamFilter(on ? null : t)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest transition"
+                    style={{
+                      borderColor: on ? color : "var(--color-border)",
+                      color: on ? color : "var(--color-muted-foreground)",
+                      boxShadow: on ? `0 0 12px -4px ${color}` : undefined,
+                    }}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: color }}
+                    />
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
+              {deck.map((d) => {
                 const taken = used.has(d.id);
                 return (
                   <button

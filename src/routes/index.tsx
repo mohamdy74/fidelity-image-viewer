@@ -4,6 +4,7 @@ import { Flag, Timer, Trophy } from "lucide-react";
 
 import heroImage from "@/assets/hero-f1.jpg";
 import { Countdown } from "@/components/Countdown";
+import { PickStatus } from "@/components/PickStatus";
 import { Button } from "@/components/ui/button";
 import { syncF1Data } from "@/lib/f1-sync.functions";
 import { lastRace, leaderboardQuery, nextRace, racesQuery } from "@/lib/queries";
@@ -101,6 +102,7 @@ function Home() {
             ))}
           </div>
         </div>
+        {upcoming && <PickStatus race={upcoming} />}
         {upcoming ? (
           <div className="carbon-panel rounded-lg p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
