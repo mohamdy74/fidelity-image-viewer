@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, nextRace, racesQuery, type Driver } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { teamColor } from "@/lib/teams";
+import { sortByTeam, teamColor, teamLabel, teamsOf } from "@/lib/teams";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
