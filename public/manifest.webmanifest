@@ -1,0 +1,25 @@
+{
+  "name": "Fantasy F1 — Prediction League",
+  "short_name": "Fantasy F1",
+  "description": "Predict the F1 top 10, pole, fastest lap and DNF before every Grand Prix.",
+  "start_url": "/predict",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17161c",
+  "theme_color": "#17161c",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

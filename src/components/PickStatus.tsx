@@ -1,0 +1,130 @@
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, CalendarPlus, CheckCircle2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import type { Race } from "@/lib/queries";
+import { cn } from "@/lib/utils";
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function icsStamp(d: Date) {
+  return (
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`
+  );
+}
+
+/** Downloads a calendar reminder one hour before picks close. */
+function addToCalendar(race: Race) {
+  const deadline = new Date(race.qualifying_at ?? race.race_at);
+  const start = new Date(deadline.getTime() - 60 * 60 * 1000);
+  const end = new Date(deadline.getTime());
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Fantasy F1//Prediction League//EN",
+    "BEGIN:VEVENT",
+    `UID:${race.id}@fantasy-f1`,
+    `DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART:${icsStamp(start)}`,
+    `DTEND:${icsStamp(end)}`,
+    `SUMMARY:Fantasy F1 — picks close: ${race.name}`,
+    `DESCRIPTION:Lock in your top 10 before the deadline to avoid the -25 penalty.`,
+    "BEGIN:VALARM",
+    "TRIGGER:-PT60M",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:Fantasy F1 picks close in 1 hour",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `fantasy-f1-${race.round}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function PickStatus({ race }: { race: Race }) {
+  const { user } = useAuth();
+
+  const { data: submitted } = useQuery({
+    queryKey: ["has-prediction", race.id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("id, top10")
+        .eq("race_id", race.id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return !!data && (data.top10 ?? []).filter(Boolean).length === 10;
+    },
+  });
+
+  const locked = new Date(race.race_at).getTime() <= Date.now();
+
+  if (!user) {
+    return (
+      <div className="carbon-panel mb-6 flex flex-wrap items-center gap-3 rounded-lg border-l-4 p-4" style={{ borderLeftColor: "var(--gold)" }}>
+        <AlertTriangle className="h-5 w-5 shrink-0 text-gold" />
+        <p className="min-w-0 flex-1 text-sm">
+          Sign in to lock in your picks for <strong>{race.name}</strong>.
+        </p>
+        <Button asChild size="sm">
+          <Link to="/auth">Sign in</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const ok = !!submitted;
+
+  return (
+    <div
+      className={cn("carbon-panel mb-6 flex flex-wrap items-center gap-3 rounded-lg border-l-4 p-4")}
+      style={{ borderLeftColor: ok ? "var(--track-green)" : "var(--color-primary)" }}
+    >
+      {ok ? (
+        <CheckCircle2 className="h-5 w-5 shrink-0" style={{ color: "var(--track-green)" }} />
+      ) : (
+        <AlertTriangle className={cn("h-5 w-5 shrink-0 text-primary", !locked && "animate-pulse")} />
+      )}
+      <p className="min-w-0 flex-1 text-sm">
+        {ok ? (
+          <>
+            Your picks are in for <strong>{race.name}</strong> — tap to review or edit.
+          </>
+        ) : locked ? (
+          <>
+            Picks closed for <strong>{race.name}</strong>.
+          </>
+        ) : (
+          <>
+            You haven&apos;t submitted picks for <strong>{race.name}</strong> yet — missing out costs
+            you 25 points.
+          </>
+        )}
+      </p>
+      <div className="flex shrink-0 gap-2">
+        {!locked && (
+          <Button size="sm" variant="secondary" onClick={() => addToCalendar(race)}>
+            <CalendarPlus className="mr-1 h-4 w-4" />
+            Remind me
+          </Button>
+        )}
+        <Button asChild size="sm" variant={ok ? "secondary" : "default"}>
+          <Link to="/predict">{ok ? "Review" : "Predict"}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
