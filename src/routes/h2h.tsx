@@ -42,14 +42,36 @@ function H2H() {
     if (x > y) wa++; else if (y > x) wb++;
   }
 
-  const Pick = ({ v, set }: { v: string; set: (s: string) => void }) => (
+  // A player can never be compared with himself: picking one side moves the
+  // other side to a different player automatically.
+  const other = (id: string) => board.find((e) => e.userId !== id)?.userId ?? "";
+  const pickA = (id: string) => {
+    setA(id);
+    if (id === b) setB(other(id));
+  };
+  const pickB = (id: string) => {
+    setB(id);
+    if (id === a) setA(other(id));
+  };
+
+  const Pick = ({
+    v,
+    set,
+    taken,
+  }: {
+    v: string;
+    set: (s: string) => void;
+    taken: string;
+  }) => (
     <select
       value={v}
       onChange={(e) => set(e.target.value)}
       className="h-12 w-full min-w-0 rounded-md border border-input bg-card px-2 font-display text-sm font-extrabold italic uppercase"
     >
       {board.map((e) => (
-        <option key={e.userId} value={e.userId}>{e.name}</option>
+        <option key={e.userId} value={e.userId} disabled={e.userId === taken}>
+          {e.name}
+        </option>
       ))}
     </select>
   );
@@ -62,9 +84,9 @@ function H2H() {
       ) : (
         <>
           <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <Pick v={a} set={setA} />
+            <Pick v={a} set={pickA} taken={b} />
             <span className="font-display text-xl font-black italic text-primary">VS</span>
-            <Pick v={b} set={setB} />
+            <Pick v={b} set={pickB} taken={a} />
           </div>
           <div className="carbon-panel mt-4 grid grid-cols-3 rounded-lg p-4 text-center">
             <Stat label="Wins" l={wa} r={wb} />
