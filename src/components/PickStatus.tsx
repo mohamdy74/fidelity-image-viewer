@@ -90,7 +90,9 @@ export function PickStatus({ race }: { race: Race }) {
 
   return (
     <div
-      className={cn("carbon-panel mb-6 flex flex-wrap items-center gap-3 rounded-lg border-l-4 p-4")}
+      className={cn(
+        "carbon-panel mb-6 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-3 rounded-lg border-l-4 p-4",
+      )}
       style={{ borderLeftColor: ok ? "var(--track-green)" : "var(--color-primary)" }}
     >
       {ok ? (
@@ -98,7 +100,7 @@ export function PickStatus({ race }: { race: Race }) {
       ) : (
         <AlertTriangle className={cn("h-5 w-5 shrink-0 text-primary", !locked && "animate-pulse")} />
       )}
-      <p className="min-w-0 flex-1 text-sm">
+      <p className="min-w-0 text-sm leading-snug">
         {ok ? (
           <>
             Your picks are in for <strong>{race.name}</strong> — tap to review or edit.
@@ -114,7 +116,7 @@ export function PickStatus({ race }: { race: Race }) {
           </>
         )}
       </p>
-      <div className="flex shrink-0 gap-2">
+      <div className="col-start-2 flex flex-wrap gap-2">
         {!locked && (
           <Button size="sm" variant="secondary" onClick={() => addToCalendar(race)}>
             <CalendarPlus className="mr-1 h-4 w-4" />
