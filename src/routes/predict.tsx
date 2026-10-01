@@ -383,9 +383,13 @@ function GridPicker({
     return i === -1 ? 0 : i;
   });
   const [drag, setDrag] = useState<{ from: number; over: number | null } | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string | null>(null);
   const dragRef = useRef<{ from: number; x: number; y: number; moved: boolean } | null>(null);
   const byId = new Map(drivers.map((d) => [d.id, d]));
   const used = new Set(top10.filter((d) => d !== EMPTY));
+  const sorted = useMemo(() => sortByTeam(drivers), [drivers]);
+  const teams = useMemo(() => teamsOf(drivers), [drivers]);
+  const deck = teamFilter ? sorted.filter((d) => teamLabel(d.team) === teamFilter) : sorted;
 
   function place(id: string) {
     if (locked) return;
