@@ -178,6 +178,7 @@ function Predict() {
       return;
     }
     toast.success("Predictions locked in.");
+    navigator.vibrate?.([12, 40, 18]);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
