@@ -11,14 +11,16 @@ function parts(msLeft: number) {
 }
 
 export function Countdown({ target, label }: { target: string; label: string }) {
-  const [now, setNow] = useState(() => Date.now());
+  // null until mounted so server and browser render the same placeholder (no wrong-number flash).
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const left = new Date(target).getTime() - now;
+  const left = now == null ? 1 : new Date(target).getTime() - now;
   const locked = left <= 0;
   const { d, h, m, s } = parts(left);
 
@@ -27,7 +29,9 @@ export function Countdown({ target, label }: { target: string; label: string }) 
       <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         {label}
       </p>
-      {locked ? (
+      {now == null ? (
+        <p className="font-mono text-lg font-bold tabular-nums text-muted-foreground">--:--:--</p>
+      ) : locked ? (
         <p className="font-display text-lg font-extrabold italic uppercase text-primary">
           Locked
         </p>
