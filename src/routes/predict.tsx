@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Countdown } from "@/components/Countdown";
+import { LightsOut } from "@/components/LightsOut";
+import { SharePicks } from "@/components/SharePicks";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -85,6 +87,8 @@ function Predict() {
   const [fastestLap, setFastestLap] = useState(EMPTY);
   const [dnf, setDnf] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [lightsOut, setLightsOut] = useState(false);
+  const endLights = useCallback(() => setLightsOut(false), []);
 
   useEffect(() => {
     if (!prediction) return;
@@ -179,6 +183,7 @@ function Predict() {
     }
     toast.success("Predictions locked in.");
     navigator.vibrate?.([12, 40, 18]);
+    setLightsOut(true);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
@@ -231,9 +236,9 @@ function Predict() {
               onChange={setFastestLap}
             />
           </Field>
-          <Field label="Driver to DNF (+1)">
+          <Field label="Driver to DNF (+1) — Aston Martin & Cadillac excluded">
             <DriverSelect
-              drivers={drivers ?? []}
+              drivers={(drivers ?? []).filter((d) => !/aston|cadillac/i.test(d.team ?? ""))}
               value={dnf}
               disabled={raceLocked}
               exclude={usedInTop10}
@@ -248,8 +253,23 @@ function Predict() {
         </div>
       </section>
 
+      {prediction && prediction.top10?.length === 10 && (
+        <div className="mt-6">
+          <SharePicks
+            raceName={race.name}
+            round={race.round}
+            playerName={(user.user_metadata?.["full_name"] as string | undefined) ?? "Me"}
+            drivers={drivers ?? []}
+            top10={prediction.top10}
+            pole={prediction.pole_driver_id}
+            fastestLap={prediction.fastest_lap_driver_id}
+            dnf={prediction.dnf_driver_id}
+          />
+        </div>
+      )}
+
       <div
-        className="sticky mt-6 rounded-lg bg-background/80 p-2 backdrop-blur-md"
+        className="sticky mt-4 rounded-lg bg-background/80 p-2 backdrop-blur-md"
         style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <Button
@@ -261,6 +281,7 @@ function Predict() {
           {raceLocked ? "Picks locked — race started" : saving ? "Saving…" : "Lock in picks"}
         </Button>
       </div>
+      {lightsOut && <LightsOut onDone={endLights} />}
     </main>
   );
 }

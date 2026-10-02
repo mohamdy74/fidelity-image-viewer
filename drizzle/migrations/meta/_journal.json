@@ -15,6 +15,13 @@
       "when": 1790557273486,
       "tag": "0001_sync_state",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790918986857,
+      "tag": "0002_paddock_reveal_and_remove_tsunoda",
+      "breakpoints": true
     }
   ]
 }

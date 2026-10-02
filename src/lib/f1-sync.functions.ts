@@ -6,6 +6,8 @@ import { NO_SUBMISSION_PENALTY, scorePrediction, type ResultRow } from "./scorin
 const API = "https://api.jolpi.ca/ergast/f1";
 const SEASON = 2026;
 const STALE_MS = 15 * 60 * 1000;
+// Drivers the league removed from its data entirely (kept inactive in the DB).
+const EXCLUDED_DRIVERS = new Set(["tsunoda"]);
 
 type ErgastSession = { date: string; time?: string | undefined };
 type ErgastRace = {
@@ -102,7 +104,9 @@ export const syncF1Data = createServerFn({ method: "POST" })
       };
     }>(`${API}/${SEASON}/driverstandings/?format=json&limit=60`);
 
-    const entries = standings?.MRData.StandingsTable.StandingsLists?.[0]?.DriverStandings ?? [];
+    const entries = (
+      standings?.MRData.StandingsTable.StandingsLists?.[0]?.DriverStandings ?? []
+    ).filter((e) => !EXCLUDED_DRIVERS.has(e.Driver.driverId));
     if (entries.length) {
       await supabaseAdmin.from("drivers").upsert(
         entries.map((e) => ({
