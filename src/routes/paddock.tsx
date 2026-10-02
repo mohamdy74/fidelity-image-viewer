@@ -192,7 +192,7 @@ function Paddock() {
   );
 }
 
-function BonusChip({ label, code, hit, pts }: { label: string; code?: string | null; hit: boolean | null; pts: number }) {
+function BonusChip({ label, code, hit, pts }: { label: string; code?: string | null | undefined; hit: boolean | null; pts: number }) {
   return (
     <div
       className={cn(
