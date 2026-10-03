@@ -236,6 +236,44 @@ export type Database = {
         }
         Relationships: []
       }
+      weekend_sessions: {
+        Row: {
+          classification: Json
+          id: string
+          race_id: string
+          session_type: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          classification?: Json
+          id?: string
+          race_id: string
+          session_type: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          classification?: Json
+          id?: string
+          race_id?: string
+          session_type?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekend_sessions_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
