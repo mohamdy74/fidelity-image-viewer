@@ -15,7 +15,7 @@ export function LightsOut({ onDone }: { onDone: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-background/95 backdrop-blur"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-background/95 backdrop-blur cursor-pointer"
       onClick={onDone}
     >
       <div className="flex gap-3">
@@ -31,15 +31,15 @@ export function LightsOut({ onDone }: { onDone: () => void }) {
           />
         ))}
       </div>
-      <p
+      <div
         className="px-6 text-center font-display text-2xl font-black italic uppercase transition-opacity duration-300"
         style={{ opacity: out ? 1 : 0 }}
       >
-        Lights out and away we go
-        <span className="mt-2 block font-sans text-base not-italic normal-case text-muted-foreground" dir="rtl">
-          تم تثبيت توقعاتك بنجاح 🏁
-        </span>
-      </p>
+        <p>Lights out and away we go</p>
+        <p className="mt-2 font-mono text-xs uppercase tracking-widest text-muted-foreground not-italic font-normal">
+          Picks locked & confirmed for the race 🏁
+        </p>
+      </div>
     </div>
   );
 }
