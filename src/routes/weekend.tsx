@@ -6,6 +6,15 @@ import { Countdown } from "@/components/Countdown";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, racesQuery, type Driver, type Race } from "@/lib/queries";
 import { teamColor } from "@/lib/teams";
+import {
+  SESSION_LABEL,
+  SESSION_MINUTES,
+  type ClassRow,
+  type ScheduleItem,
+  type SessionPayload,
+  type SessionType,
+} from "@/lib/weekend";
+import { getWeekendSchedule, getWeekendSession } from "@/lib/weekend.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/weekend")({
@@ -14,17 +23,18 @@ export const Route = createFileRoute("/weekend")({
       { title: "Race weekend — Fantasy F1" },
       {
         name: "description",
-        content: "Session schedule, qualifying and race classification for the current Grand Prix weekend.",
+        content:
+          "Session schedule, practice, qualifying and race classification for the current Grand Prix weekend.",
       },
       { property: "og:title", content: "Race weekend — Fantasy F1" },
       {
         property: "og:description",
-        content: "Follow the Grand Prix weekend: schedule, qualifying and race result.",
+        content: "Follow the Grand Prix weekend: schedule, practice, qualifying and race result.",
       },
       { name: "twitter:title", content: "Race weekend — Fantasy F1" },
       {
         name: "twitter:description",
-        content: "Follow the Grand Prix weekend: schedule, qualifying and race result.",
+        content: "Follow the Grand Prix weekend: schedule, practice, qualifying and race result.",
       },
     ],
   }),
@@ -38,17 +48,20 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "qualifying", label: "Qualifying" },
   { id: "race", label: "Race" },
 ];
+const GROUPS: Record<Exclude<Tab, "schedule">, SessionType[]> = {
+  practice: ["fp1", "fp2", "fp3"],
+  qualifying: ["sprint_qualifying", "qualifying"],
+  race: ["sprint", "race"],
+};
 
 type Status = "upcoming" | "live" | "completed";
 const MIN = 60_000;
-const QUALI_MS = 60 * MIN;
-const RACE_MS = 120 * MIN;
 const STAY_MS = 3 * 24 * 60 * MIN; // keep showing a weekend until 3 days after the race starts
 
-function statusOf(startIso: string, durationMs: number, now: number): Status {
+function statusOf(startIso: string, type: SessionType, now: number): Status {
   const start = new Date(startIso).getTime();
   if (now < start) return "upcoming";
-  return now < start + durationMs ? "live" : "completed";
+  return now < start + SESSION_MINUTES[type] * MIN ? "live" : "completed";
 }
 
 /** null on the server and first render, so times never mismatch between server and browser. */
@@ -84,6 +97,24 @@ const STATUS_STYLE: Record<Status, { label: string; color: string }> = {
   live: { label: "Live", color: "var(--color-primary)" },
   completed: { label: "Completed", color: "var(--track-green)" },
 };
+
+// ---- small local cache for finished sessions (they never change) ----
+const cacheKey = (raceId: string, type: string) => `ff1:session:${raceId}:${type}`;
+function readCache(raceId: string, type: string): SessionPayload | undefined {
+  try {
+    const raw = window.localStorage.getItem(cacheKey(raceId, type));
+    return raw ? (JSON.parse(raw) as SessionPayload) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function writeCache(raceId: string, type: string, payload: SessionPayload) {
+  try {
+    window.localStorage.setItem(cacheKey(raceId, type), JSON.stringify(payload));
+  } catch {
+    /* storage unavailable: ignore */
+  }
+}
 
 function Weekend() {
   const now = useNow();
@@ -142,43 +173,49 @@ function Weekend() {
       </div>
 
       <div className="mt-4">
-        {tab === "schedule" && <Schedule race={race} now={now} />}
-        {tab === "practice" && (
-          <Empty text="No practice classification is available for this weekend yet." />
-        )}
-        {(tab === "qualifying" || tab === "race") && <Results race={race} now={now} tab={tab} />}
+        <WeekendBody race={race} now={now} tab={tab} />
       </div>
     </Shell>
   );
 }
 
-function Schedule({ race, now }: { race: Race; now: number }) {
-  const sessions = [
-    race.qualifying_at && {
-      key: "q",
-      name: "Qualifying",
-      at: race.qualifying_at,
-      status: statusOf(race.qualifying_at, QUALI_MS, now),
-    },
-    { key: "r", name: "Grand Prix", at: race.race_at, status: statusOf(race.race_at, RACE_MS, now) },
-  ].filter(Boolean) as { key: string; name: string; at: string; status: Status }[];
+function WeekendBody({ race, now, tab }: { race: Race; now: number; tab: Tab }) {
+  // The full session list (practice, sprint, ...) comes from the server; until it
+  // arrives (or if it fails) we show what the races table already knows.
+  const schedQ = useQuery({
+    queryKey: ["weekend-schedule", race.id],
+    staleTime: 30 * MIN,
+    retry: 1,
+    queryFn: async () => (await getWeekendSchedule({ data: { raceId: race.id } })).sessions,
+  });
+  const fallback: ScheduleItem[] = [
+    ...(race.qualifying_at ? [{ type: "qualifying" as const, startsAt: race.qualifying_at }] : []),
+    { type: "race" as const, startsAt: race.race_at },
+  ];
+  const sessions = schedQ.data && schedQ.data.length ? schedQ.data : fallback;
 
-  const next = sessions.find((s) => s.status !== "completed");
+  if (tab === "schedule") return <Schedule sessions={sessions} now={now} />;
+  return <SessionPane key={tab} race={race} sessions={sessions} group={tab} now={now} />;
+}
+
+function Schedule({ sessions, now }: { sessions: ScheduleItem[]; now: number }) {
+  const items = sessions.map((s) => ({ ...s, status: statusOf(s.startsAt, s.type, now) }));
+  const next = items.find((s) => s.status !== "completed");
 
   return (
     <div className="space-y-2">
-      {sessions.map((s) => {
+      {items.map((s) => {
         const st = STATUS_STYLE[s.status];
         return (
           <div
-            key={s.key}
+            key={s.type}
             className="tower-row flex items-center justify-between gap-3 rounded-md px-3 py-3"
             style={{ borderLeftColor: st.color }}
           >
             <div className="min-w-0">
-              <p className="font-display text-base font-extrabold italic uppercase">{s.name}</p>
+              <p className="font-display text-base font-extrabold italic uppercase">{SESSION_LABEL[s.type]}</p>
               <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                {localTime(s.at)}
+                {localTime(s.startsAt)}
               </p>
             </div>
             <span
@@ -192,12 +229,174 @@ function Schedule({ race, now }: { race: Race; now: number }) {
       })}
       {next && (
         <div className="pt-2">
-          <Countdown target={next.at} label={`${next.name} starts in`} />
+          <Countdown target={next.startsAt} label={`${SESSION_LABEL[next.type]} starts in`} />
         </div>
       )}
     </div>
   );
 }
+
+function SessionPane({
+  race,
+  sessions,
+  group,
+  now,
+}: {
+  race: Race;
+  sessions: ScheduleItem[];
+  group: Exclude<Tab, "schedule">;
+  now: number;
+}) {
+  const available = GROUPS[group]
+    .map((t) => sessions.find((s) => s.type === t))
+    .filter((s): s is ScheduleItem => !!s);
+
+  const [picked, setPicked] = useState<SessionType | null>(null);
+
+  if (!available.length) {
+    return (
+      <Empty
+        text={
+          group === "practice"
+            ? "No practice sessions are listed for this weekend yet."
+            : "No sessions of this kind are listed for this weekend."
+        }
+      />
+    );
+  }
+
+  // Default to the most recent session that has already started.
+  const started = available.filter((s) => new Date(s.startsAt).getTime() <= now);
+  const selected = available.find((s) => s.type === picked) ?? started[started.length - 1] ?? available[0]!;
+
+  return (
+    <div className="space-y-3">
+      {available.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          {available.map((s) => (
+            <button
+              key={s.type}
+              type="button"
+              onClick={() => setPicked(s.type)}
+              className={cn(
+                "min-h-9 touch-manipulation rounded-full border px-3 font-mono text-[11px] font-bold uppercase tracking-wider",
+                s.type === selected.type
+                  ? "border-primary text-primary"
+                  : "border-border text-muted-foreground",
+              )}
+            >
+              {SESSION_LABEL[s.type]}
+            </button>
+          ))}
+        </div>
+      )}
+      {selected.type === "race" ? (
+        <RaceResults race={race} now={now} />
+      ) : (
+        <SessionResults key={selected.type} raceId={race.id} type={selected.type} startsAt={selected.startsAt} now={now} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- sessions
+
+function SessionResults({
+  raceId,
+  type,
+  startsAt,
+  now,
+}: {
+  raceId: string;
+  type: SessionType;
+  startsAt: string;
+  now: number;
+}) {
+  const q = useQuery({
+    queryKey: ["weekend-session", raceId, type],
+    retry: 1,
+    initialData: () => readCache(raceId, type),
+    staleTime: (query) => (query.state.data?.state === "ready" ? Number.POSITIVE_INFINITY : 30_000),
+    refetchInterval: (query) => (query.state.data?.state === "ready" ? false : 60_000),
+    queryFn: async () => {
+      const r = await getWeekendSession({ data: { raceId, sessionType: type } });
+      if (r.state === "ready") writeCache(raceId, type, r);
+      return r;
+    },
+  });
+
+  if (q.isLoading) return <div className="h-40 animate-pulse rounded-lg bg-muted/60" />;
+  if (q.isError && !q.data) {
+    return <Empty text="Couldn't load this session right now. Pull to refresh or try again in a moment." />;
+  }
+
+  const data = q.data;
+  const state = data?.state ?? statusLikeState(startsAt, type, now);
+
+  if (state === "upcoming") return <Empty text={`${SESSION_LABEL[type]} starts ${localTime(startsAt)}.`} />;
+  if (state === "live")
+    return <Empty text={`${SESSION_LABEL[type]} is in progress. The classification appears once it ends.`} />;
+  if (state === "pending" || !data || !data.rows.length)
+    return <Empty text="Waiting for the official classification…" />;
+
+  return <ClassTable rows={data.rows} type={type} />;
+}
+
+function statusLikeState(startsAt: string, type: SessionType, now: number): SessionPayload["state"] {
+  const s = statusOf(startsAt, type, now);
+  return s === "upcoming" ? "upcoming" : s === "live" ? "live" : "pending";
+}
+
+function ClassTable({ rows, type }: { rows: ClassRow[]; type: SessionType }) {
+  const quali = type === "qualifying" || type === "sprint_qualifying";
+  return (
+    <div className="space-y-1">
+      {rows.map((r, i) => {
+        const sub = quali
+          ? [r.q1 && `Q1 ${r.q1}`, r.q2 && `Q2 ${r.q2}`, r.q3 && `Q3 ${r.q3}`].filter(Boolean).join(" · ")
+          : [r.gap, r.laps != null ? `${r.laps} laps` : null].filter(Boolean).join(" · ");
+        return (
+          <div
+            key={`${r.driverId ?? r.number ?? i}`}
+            className={cn(
+              "tower-row flex items-center gap-3 rounded-md px-3 py-2",
+              quali && i === 10 && "mt-3 border-t-2 border-dashed border-primary/40",
+            )}
+            style={{ borderLeftColor: teamColor(r.team) }}
+          >
+            <span
+              className={cn(
+                "w-8 shrink-0 text-center font-mono text-sm font-bold tabular-nums",
+                r.position === 1 && "text-gold",
+              )}
+            >
+              {r.position ?? "–"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-display text-sm font-extrabold italic uppercase">
+                {r.code ?? r.name ?? (r.number != null ? `#${r.number}` : "—")}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {[r.name, r.team].filter(Boolean).join(" · ")}
+              </span>
+              {sub && <span className="block truncate font-mono text-[10px] text-muted-foreground">{sub}</span>}
+            </span>
+            <span className="shrink-0 text-right font-mono text-sm font-bold tabular-nums">
+              {r.status ? <span className="text-primary">{r.status}</span> : (r.time ?? "—")}
+            </span>
+          </div>
+        );
+      })}
+      {quali && rows.length > 10 && (
+        <p className="pt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          Dashed line = top 10
+        </p>
+      )}
+    </div>
+  );
+}
+
+// -------------------------------------------------------------------- race
 
 type ResultRow = {
   driver_id: string;
@@ -207,7 +406,7 @@ type ResultRow = {
   pole: boolean;
 };
 
-function Results({ race, now, tab }: { race: Race; now: number; tab: "qualifying" | "race" }) {
+function RaceResults({ race, now }: { race: Race; now: number }) {
   const { data: drivers } = useQuery(driversQuery);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["weekend-results", race.id],
@@ -230,35 +429,8 @@ function Results({ race, now, tab }: { race: Race; now: number; tab: "qualifying
   if (isLoading) return <div className="h-40 animate-pulse rounded-lg bg-muted/60" />;
   if (isError) return <Empty text="Couldn't load results right now. Try again in a moment." />;
 
-  if (tab === "qualifying") {
-    const pole = rows.find((r) => r.pole);
-    if (!pole) {
-      const st = race.qualifying_at ? statusOf(race.qualifying_at, QUALI_MS, now) : "upcoming";
-      return (
-        <Empty
-          text={
-            st === "upcoming"
-              ? "Qualifying hasn't started yet."
-              : st === "live"
-                ? "Qualifying is in progress."
-                : "The qualifying result will appear here once it is confirmed."
-          }
-        />
-      );
-    }
-    return (
-      <div className="carbon-panel rounded-lg p-4">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Pole position
-        </p>
-        <DriverName d={byId.get(pole.driver_id)} fallback={pole.driver_id} big />
-      </div>
-    );
-  }
-
-  // Race tab
   if (!hasResults) {
-    const st = statusOf(race.race_at, RACE_MS, now);
+    const st = statusOf(race.race_at, "race", now);
     return (
       <Empty
         text={
@@ -299,9 +471,7 @@ function Results({ race, now, tab }: { race: Race; now: number; tab: "qualifying
               className="tower-row flex items-center gap-3 rounded-md px-3 py-2"
               style={{ borderLeftColor: teamColor(d?.team ?? null) }}
             >
-              <span className="w-8 shrink-0 text-center font-mono text-sm font-bold tabular-nums">
-                {r.position}
-              </span>
+              <span className="w-8 shrink-0 text-center font-mono text-sm font-bold tabular-nums">{r.position}</span>
               <DriverName d={d} fallback={r.driver_id} />
               <span className="ml-auto flex shrink-0 gap-1 font-mono text-[10px] font-bold uppercase">
                 {r.pole && <span className="rounded bg-gold px-1.5 py-0.5 text-gold-foreground">Pole</span>}
@@ -328,10 +498,10 @@ function Results({ race, now, tab }: { race: Race; now: number; tab: "qualifying
   );
 }
 
-function DriverName({ d, fallback, big }: { d?: Driver | undefined; fallback: string; big?: boolean }) {
+function DriverName({ d, fallback }: { d?: Driver | undefined; fallback: string }) {
   return (
     <span className="min-w-0">
-      <span className={cn("block truncate font-display font-extrabold italic uppercase", big ? "mt-1 text-2xl" : "text-sm")}>
+      <span className="block truncate font-display text-sm font-extrabold italic uppercase">
         {d ? (d.code ?? d.full_name) : fallback}
       </span>
       {d && (
