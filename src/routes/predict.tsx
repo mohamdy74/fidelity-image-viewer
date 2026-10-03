@@ -34,6 +34,8 @@ export const Route = createFileRoute("/predict")({
         property: "og:description",
         content: "Predict the top 10, pole, fastest lap and a DNF for the next Grand Prix.",
       },
+      { name: "twitter:title", content: "Make your picks — Fantasy F1" },
+      { name: "twitter:description", content: "Predict the top 10, pole, fastest lap and a DNF for the next Grand Prix." },
     ],
   }),
   component: Predict,
@@ -268,10 +270,7 @@ function Predict() {
         </div>
       )}
 
-      <div
-        className="sticky mt-4 rounded-lg bg-background/80 p-2 backdrop-blur-md"
-        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mt-4 rounded-lg bg-background/80 p-2 backdrop-blur-md md:bottom-3">
         <Button
           size="lg"
           className="h-12 w-full text-base"
@@ -513,6 +512,10 @@ function GridPicker({
                 onPointerMove={onMove}
                 onPointerUp={(e) => onUp(e, i)}
                 onPointerCancel={() => {
+                  dragRef.current = null;
+                  setDrag(null);
+                }}
+                onLostPointerCapture={() => {
                   dragRef.current = null;
                   setDrag(null);
                 }}

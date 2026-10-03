@@ -22,6 +22,8 @@ export const Route = createFileRoute("/paddock")({
       { property: "og:description", content: "Everyone's picks revealed after lock, with a post-race points debrief." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Paddock Reveal & Race Debrief — Fantasy F1" },
+      { name: "twitter:description", content: "Everyone's picks revealed after lock, with a post-race points debrief." },
     ],
   }),
   component: Paddock,
@@ -106,10 +108,10 @@ function Paddock() {
         {hasResults ? "Race debrief" : "Paddock reveal"}
       </p>
       <h1 className="mt-1 text-3xl">{race ? race.name : "No locked race yet"}</h1>
-      <p className="mt-1 text-sm text-muted-foreground" dir="rtl">
+      <p className="mt-1 text-sm text-muted-foreground">
         {hasResults
-          ? "أخضر = مركز مظبوط، أصفر = قريب، رمادي = بعيد، أحمر = خسارة"
-          : "التوقعات بتتكشف بعد ما الباب يقفل — شوف الجروب اختار إيه"}
+          ? "Green = exact position, gold = close, red = points lost"
+          : "Picks are revealed once the grid locks — see what the group chose"}
       </p>
 
       {locked.length > 1 && (

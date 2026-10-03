@@ -20,6 +20,8 @@ export const Route = createFileRoute("/leaderboard")({
         property: "og:description",
         content: "See who is leading the Fantasy F1 prediction league.",
       },
+      { name: "twitter:title", content: "League standings — Fantasy F1" },
+      { name: "twitter:description", content: "See who is leading the Fantasy F1 prediction league." },
     ],
   }),
   component: Leaderboard,
