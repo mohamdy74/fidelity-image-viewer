@@ -14,6 +14,8 @@ export const Route = createFileRoute("/rules")({
         property: "og:description",
         content: "Top 10 accuracy, bonus picks, perfect weekend and the no-submission penalty.",
       },
+      { name: "twitter:title", content: "Scoring rules — Fantasy F1" },
+      { name: "twitter:description", content: "Top 10 accuracy, bonus picks, perfect weekend and the no-submission penalty." },
     ],
   }),
   component: Rules,

@@ -19,6 +19,8 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Sign in with Google to enter the Fantasy F1 prediction league.",
       },
+      { name: "twitter:title", content: "Join the league — Fantasy F1" },
+      { name: "twitter:description", content: "Sign in with Google to enter the Fantasy F1 prediction league." },
     ],
   }),
   component: AuthPage,
