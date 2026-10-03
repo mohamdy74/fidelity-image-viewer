@@ -1,4 +1,4 @@
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Download, Image as ImageIcon, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { HelmetLogo } from "@/components/SiteHeader";
@@ -33,24 +33,126 @@ export function SharePicks({
   const url = typeof window !== "undefined" ? `${window.location.origin}/predict` : "";
 
   const text = [
-    `🏎️ توقعاتي لـ ${raceName} (الجولة ${round}) 🏁`,
+    `🏎️ My predictions for ${raceName} (Round ${round}) 🏁`,
     "━━━━━━━━━━━━━━",
     ...top10.map((id, i) => `${MEDAL[i]} P${i + 1}: ${name(id)}`),
     `⚡ Pole: ${name(pole)}`,
     `🟣 Fastest Lap: ${name(fastestLap)}`,
     `💥 First DNF: ${name(dnf)}`,
     "━━━━━━━━━━━━━━",
-    `🏆 وريني توقعك وتحداني:`,
+    `🏆 Check my picks & challenge me:`,
     url,
   ].join("\n");
 
-  async function nativeShare() {
+  async function exportCardAsPng(): Promise<Blob | null> {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1350; // Aspect ratio 4:5 for Instagram / Stories
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // 1. Carbon Dark Background
+    ctx.fillStyle = "#0E0E12";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. F1 Accent Red Strip
+    ctx.fillStyle = "#E10600";
+    ctx.fillRect(0, 0, canvas.width, 16);
+
+    // 3. Grand Prix & Player Header
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 52px Archivo, sans-serif";
+    ctx.fillText(raceName.toUpperCase(), 60, 120);
+
+    ctx.fillStyle = "#E10600";
+    ctx.font = "bold 28px monospace";
+    ctx.fillText(`ROUND ${round} · ${playerName.toUpperCase()}`, 60, 170);
+
+    // 4. Driver Rows (P1 - P10)
+    let y = 220;
+    top10.forEach((id, i) => {
+      const d = byId.get(id);
+      ctx.fillStyle = "#18181F";
+      ctx.fillRect(60, y, 960, 72);
+
+      // Team Color Indicator Bar
+      ctx.fillStyle = teamColor(d?.team ?? null);
+      ctx.fillRect(60, y, 14, 72);
+
+      ctx.fillStyle = "#888899";
+      ctx.font = "bold 32px monospace";
+      ctx.fillText(`P${i + 1}`, 95, y + 48);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 36px Archivo, sans-serif";
+      ctx.fillText(d?.code ?? "—", 180, y + 50);
+
+      ctx.fillStyle = "#AAAAAA";
+      ctx.font = "30px sans-serif";
+      ctx.fillText(d?.full_name ?? "", 300, y + 49);
+
+      y += 84;
+    });
+
+    // 5. Bonus Picks Section
+    ctx.fillStyle = "#14141A";
+    ctx.fillRect(60, 1080, 960, 140);
+
+    ctx.fillStyle = "#FFD700";
+    ctx.font = "bold 26px monospace";
+    ctx.fillText(`POLE: ${byId.get(pole ?? "")?.code ?? "—"}`, 100, 1160);
+    ctx.fillText(`FL: ${byId.get(fastestLap ?? "")?.code ?? "—"}`, 420, 1160);
+    ctx.fillText(`DNF: ${byId.get(dnf ?? "")?.code ?? "—"}`, 720, 1160);
+
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  }
+
+  async function handleDownloadImage() {
+    const blob = await exportCardAsPng();
+    if (!blob) {
+      toast.error("Failed to generate image.");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `f1-picks-round-${round}.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast.success("Image saved to your downloads!");
+  }
+
+  async function handleShareImage() {
+    const blob = await exportCardAsPng();
+    if (!blob) {
+      toast.error("Failed to generate image.");
+      return;
+    }
+
+    const file = new File([blob], `f1-picks-round-${round}.png`, { type: "image/png" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `F1 Picks - Round ${round}`,
+          text: `Check out my F1 predictions for ${raceName}!`,
+        });
+        return;
+      } catch {
+        /* Cancelled or failed share */
+      }
+    } else {
+      handleDownloadImage();
+    }
+  }
+
+  async function nativeShareText() {
     if (navigator.share) {
       try {
         await navigator.share({ text });
         return;
       } catch {
-        /* cancelled */
+        /* Cancelled */
       }
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
@@ -61,7 +163,7 @@ export function SharePicks({
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="lg" className="h-12 w-full gap-2 border-gold/60 text-gold">
-          <Share2 className="h-4 w-4" /> شارك توقعاتك 🏁
+          <Share2 className="h-4 w-4" />Share Picks 🏁
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm p-0">
@@ -98,23 +200,33 @@ export function SharePicks({
             <Bonus label="DNF 💥" value={byId.get(dnf ?? "")?.code} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 p-3 pt-0">
-          <Button onClick={nativeShare} className="gap-2">
-            <Share2 className="h-4 w-4" /> واتساب
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={async () => {
-              await navigator.clipboard?.writeText(text);
-              toast.success("اتنسخت — الصقها في الجروب");
-            }}
-          >
-            <Copy className="h-4 w-4" /> نسخ
-          </Button>
-          <p className="col-span-2 text-center text-xs text-muted-foreground">
-            خد سكرين شوت للكارت وحطه ستوري 📸
-          </p>
+
+        {/* Action Buttons Section */}
+        <div className="space-y-2 p-3 pt-0">
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={handleShareImage} className="gap-2">
+              <ImageIcon className="h-4 w-4" /> Share Card
+            </Button>
+            <Button variant="outline" onClick={handleDownloadImage} className="gap-2">
+              <Download className="h-4 w-4" /> Save PNG
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="ghost" onClick={nativeShareText} className="h-9 text-xs gap-1.5">
+              <Share2 className="h-3.5 w-3.5" /> Share Text
+            </Button>
+            <Button
+              variant="ghost"
+              className="h-9 text-xs gap-1.5"
+              onClick={async () => {
+                await navigator.clipboard?.writeText(text);
+                toast.success("Copied text to clipboard!");
+              }}
+            >
+              <Copy className="h-3.5 w-3.5" /> Copy Text
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
