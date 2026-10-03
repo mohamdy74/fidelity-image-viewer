@@ -165,18 +165,31 @@ function Predict() {
     }
 
     setSaving(true);
-    const payload = {
-      user_id: user!.id,
-      race_id: race!.id,
+    // Once qualifying has started the pole pick is frozen, so we never send it.
+    // (An upsert would also run the database's "insert" checks against the pole
+    // value and reject a save that only changes the top 10.)
+    const fields = {
       top10,
-      pole_driver_id: pole === EMPTY ? null : pole,
       fastest_lap_driver_id: fastestLap === EMPTY ? null : fastestLap,
       dnf_driver_id: dnf === EMPTY ? null : dnf,
+      ...(poleLocked ? {} : { pole_driver_id: pole === EMPTY ? null : pole }),
     };
 
-    const { error } = await supabase
+    let error: { message: string } | null = null;
+    const upd = await supabase
       .from("predictions")
-      .upsert(payload, { onConflict: "user_id,race_id" });
+      .update(fields)
+      .eq("user_id", user!.id)
+      .eq("race_id", race!.id)
+      .select("id");
+    if (upd.error) {
+      error = upd.error;
+    } else if (!upd.data?.length) {
+      const ins = await supabase
+        .from("predictions")
+        .insert({ user_id: user!.id, race_id: race!.id, ...fields });
+      error = ins.error;
+    }
     setSaving(false);
 
     if (error) {
