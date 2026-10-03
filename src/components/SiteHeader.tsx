@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Grid3x3, Home, LogOut, Swords, Trophy } from "lucide-react";
+import { CalendarDays, Grid3x3, Home, LogOut, Swords, Trophy } from "lucide-react";
 
 import { LogoHorizontal, LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ const links = [
   { to: "/predict", label: "Predict", icon: Grid3x3 },
   { to: "/leaderboard", label: "Standings", icon: Trophy },
   { to: "/h2h", label: "1v1", icon: Swords },
+  { to: "/weekend", label: "Weekend", icon: CalendarDays },
   { to: "/rules", label: "Rules", icon: null },
 ] as const;
 
@@ -60,16 +61,13 @@ export function SiteHeader() {
 }
 
 export function BottomNav() {
-  const invite = () => {
-    const text = `🏁 Fantasy F1 — join and lock in your picks before the track closes!\n${window.location.origin}/predict`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  };
   return (
     <>
-      <div className="h-20 md:hidden" />
+      <div className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" />
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label="Main"
       >
         {links
           .filter((l) => l.icon)
@@ -80,20 +78,13 @@ export function BottomNav() {
                 key={l.to}
                 to={l.to}
                 activeOptions={{ exact: l.to === "/" }}
-                className="flex h-16 flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground [&.active]:text-primary"
+                className="flex h-16 touch-manipulation select-none flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground active:bg-secondary/60 [&.active]:text-primary"
               >
                 <Icon className="h-5 w-5" />
                 {l.label}
               </Link>
             );
           })}
-        <button
-          onClick={invite}
-          className="flex h-16 flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-widest text-gold"
-        >
-          <span className="text-lg leading-5">💬</span>
-          Invite
-        </button>
       </nav>
     </>
   );

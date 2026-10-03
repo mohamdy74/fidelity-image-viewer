@@ -6,7 +6,6 @@ import heroImage from "@/assets/hero-f1.jpg";
 import { Countdown } from "@/components/Countdown";
 import { PickStatus } from "@/components/PickStatus";
 import { Button } from "@/components/ui/button";
-import { syncF1Data } from "@/lib/f1-sync.functions";
 import { lastRace, leaderboardQuery, nextRace, racesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/")({
@@ -28,7 +27,6 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async ({ context }) => {
-    await syncF1Data({ data: {} }).catch(() => null);
     await context.queryClient.ensureQueryData(racesQuery);
   },
   component: Home,
