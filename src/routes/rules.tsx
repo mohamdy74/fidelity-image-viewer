@@ -3,18 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/rules")({
   head: () => ({
     meta: [
-      { title: "Scoring rules — Fantasy F1" },
+      { title: "Scoring rules — DOWNFORCE" },
       {
         name: "description",
         content:
-          "How Fantasy F1 scoring works: top 10 accuracy points, pole, fastest lap, DNF, perfect weekend bonuses and penalties.",
+          "How DOWNFORCE scoring works: top 10 accuracy points, pole, fastest lap, DNF, perfect weekend bonuses and penalties.",
       },
-      { property: "og:title", content: "Scoring rules — Fantasy F1" },
+      { property: "og:title", content: "Scoring rules — DOWNFORCE" },
       {
         property: "og:description",
         content: "Top 10 accuracy, bonus picks, perfect weekend and the no-submission penalty.",
       },
-      { name: "twitter:title", content: "Scoring rules — Fantasy F1" },
+      { name: "twitter:title", content: "Scoring rules — DOWNFORCE" },
       { name: "twitter:description", content: "Top 10 accuracy, bonus picks, perfect weekend and the no-submission penalty." },
     ],
   }),

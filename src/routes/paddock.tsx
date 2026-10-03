@@ -13,16 +13,16 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/paddock")({
   head: () => ({
     meta: [
-      { title: "Paddock Reveal & Race Debrief — Fantasy F1" },
+      { title: "Paddock Reveal & Race Debrief — DOWNFORCE" },
       {
         name: "description",
         content: "See every player's picks once the grid locks, and a colour-coded debrief of where points were won and lost.",
       },
-      { property: "og:title", content: "Paddock Reveal & Race Debrief — Fantasy F1" },
+      { property: "og:title", content: "Paddock Reveal & Race Debrief — DOWNFORCE" },
       { property: "og:description", content: "Everyone's picks revealed after lock, with a post-race points debrief." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Paddock Reveal & Race Debrief — Fantasy F1" },
+      { name: "twitter:title", content: "Paddock Reveal & Race Debrief — DOWNFORCE" },
       { name: "twitter:description", content: "Everyone's picks revealed after lock, with a post-race points debrief." },
     ],
   }),

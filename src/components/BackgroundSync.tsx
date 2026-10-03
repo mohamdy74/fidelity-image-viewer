@@ -6,7 +6,7 @@ import { syncF1Data } from "@/lib/f1-sync.functions";
 const MIN_GAP_MS = 10 * 60 * 1000;
 
 /**
- * Runs the (server-throttled) F1 data sync in the background, after the page is
+ * Runs the (server-throttled) race data sync in the background, after the page is
  * already on screen, so navigating never waits for it. When it finishes, the
  * cached races and standings are refreshed quietly.
  */

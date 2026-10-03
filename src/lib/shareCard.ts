@@ -39,6 +39,7 @@ const C = {
   text: "#FFFFFF",
   muted: "#A4A4AB",
   red: "#E10600",
+  orange: "#FF6A1F",
   gold: "#FFD230",
   purple: "#955BE3",
   silver: "#C9CCD3",
@@ -87,26 +88,20 @@ function drawLogo(ctx: Ctx, x: number, y: number, height: number) {
   ctx.scale(k, k);
   ctx.translate(-LOGO.box.x, -LOGO.box.y);
   ctx.fillStyle = C.text;
-  ctx.fill(new Path2D(LOGO.fMain));
+  ctx.fill(new Path2D(LOGO.d), "evenodd");
+  ctx.fillStyle = C.orange;
+  ctx.fill(new Path2D(LOGO.c1));
   ctx.fillStyle = C.red;
-  ctx.fill(new Path2D(LOGO.fMid));
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.fill(new Path2D(LOGO.divider));
+  ctx.fill(new Path2D(LOGO.c2));
   ctx.save();
-  ctx.translate(LOGO.wordX, 0);
+  ctx.translate(LOGO.textX, 0);
   ctx.fillStyle = C.text;
   ctx.fill(new Path2D(LOGO.word));
-  ctx.restore();
-  ctx.save();
-  ctx.translate(LOGO.f1X, 0);
-  ctx.fillStyle = C.text;
-  ctx.fill(new Path2D(LOGO.fMain));
-  ctx.fillStyle = C.red;
-  ctx.fill(new Path2D(LOGO.fMid));
-  ctx.fill(new Path2D(LOGO.one));
+  ctx.translate(0, LOGO.subY);
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fill(new Path2D(LOGO.sub));
   ctx.restore();
   ctx.restore();
-  return (LOGO.box.w * k);
 }
 
 /** Pure drawing: paints the whole share card onto a 1080x1350 canvas context. */
@@ -128,12 +123,12 @@ export function drawPickCard(ctx: Ctx, d: CardData) {
   ctx.fillRect(0, 0, CARD_W, 10);
 
   // header: logo + round
-  drawLogo(ctx, L, 62, 44);
+  drawLogo(ctx, L, 50, 66);
   ctx.fillStyle = C.muted;
   ctx.font = MONO(26);
   spaced(ctx, 5);
   ctx.textAlign = "right";
-  ctx.fillText(`ROUND ${String(d.round).padStart(2, "0")}`, R, 98);
+  ctx.fillText(`ROUND ${String(d.round).padStart(2, "0")}`, R, 96);
   ctx.textAlign = "left";
   spaced(ctx, 0);
 
@@ -220,11 +215,17 @@ export function drawPickCard(ctx: Ctx, d: CardData) {
   ctx.fillStyle = C.muted;
   ctx.font = MONO(22);
   spaced(ctx, 2);
-  ctx.fillText(d.host.toUpperCase(), L, CARD_H - 38);
+  ctx.fillText(d.host.toUpperCase(), L, CARD_H - 44);
   ctx.fillStyle = C.red;
   ctx.textAlign = "right";
   spaced(ctx, 4);
-  ctx.fillText("CAN YOU BEAT ME?", R, CARD_H - 38);
+  ctx.fillText("CAN YOU BEAT ME?", R, CARD_H - 44);
+  spaced(ctx, 0);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(164,164,171,0.6)";
+  ctx.font = MONO(15);
+  spaced(ctx, 3);
+  ctx.fillText("UNOFFICIAL NON-PROFIT FAN PROJECT", CARD_W / 2, CARD_H - 12);
   spaced(ctx, 0);
   ctx.textAlign = "left";
 }

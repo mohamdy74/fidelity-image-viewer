@@ -20,18 +20,18 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/weekend")({
   head: () => ({
     meta: [
-      { title: "Race weekend — Fantasy F1" },
+      { title: "Race weekend — DOWNFORCE" },
       {
         name: "description",
         content:
           "Session schedule, practice, qualifying and race classification for the current Grand Prix weekend.",
       },
-      { property: "og:title", content: "Race weekend — Fantasy F1" },
+      { property: "og:title", content: "Race weekend — DOWNFORCE" },
       {
         property: "og:description",
         content: "Follow the Grand Prix weekend: schedule, practice, qualifying and race result.",
       },
-      { name: "twitter:title", content: "Race weekend — Fantasy F1" },
+      { name: "twitter:title", content: "Race weekend — DOWNFORCE" },
       {
         name: "twitter:description",
         content: "Follow the Grand Prix weekend: schedule, practice, qualifying and race result.",
@@ -99,7 +99,7 @@ const STATUS_STYLE: Record<Status, { label: string; color: string }> = {
 };
 
 // ---- small local cache for finished sessions (they never change) ----
-const cacheKey = (raceId: string, type: string) => `ff1:session:${raceId}:${type}`;
+const cacheKey = (raceId: string, type: string) => `dfr:session:${raceId}:${type}`;
 function readCache(raceId: string, type: string): SessionPayload | undefined {
   try {
     const raw = window.localStorage.getItem(cacheKey(raceId, type));

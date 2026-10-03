@@ -11,18 +11,18 @@ import { lastRace, leaderboardQuery, nextRace, racesQuery } from "@/lib/queries"
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fantasy F1 — Prediction League" },
+      { title: "DOWNFORCE — Fantasy Racing League" },
       {
         name: "description",
         content:
-          "Predict the F1 top 10, pole, fastest lap and DNF before every Grand Prix and climb the league table.",
+          "Predict the top 10, pole, fastest lap and DNF before every Grand Prix and climb the league table.",
       },
-      { property: "og:title", content: "Fantasy F1 — Prediction League" },
+      { property: "og:title", content: "DOWNFORCE — Fantasy Racing League" },
       {
         property: "og:description",
         content: "Call the grid. Beat your rivals. Take the top step.",
       },
-      { name: "twitter:title", content: "Fantasy F1 — Prediction League" },
+      { name: "twitter:title", content: "DOWNFORCE — Fantasy Racing League" },
       { name: "twitter:description", content: "Call the grid. Beat your rivals. Take the top step." },
     ],
   }),
@@ -46,7 +46,7 @@ function Home() {
       <section className="relative overflow-hidden">
         <img
           src={heroImage}
-          alt="Formula 1 car racing at night"
+          alt="Racing car at night"
           width={1600}
           height={912}
           className="absolute inset-0 h-full w-full object-cover opacity-45"

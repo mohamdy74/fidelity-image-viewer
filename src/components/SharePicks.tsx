@@ -47,7 +47,7 @@ export function SharePicks({
   const byId = new Map(drivers.map((d) => [d.id, d]));
   const name = (id: string | null) => (id ? (byId.get(id)?.full_name ?? "—") : "—");
   const url = typeof window !== "undefined" ? `${window.location.origin}/predict` : "";
-  const fileName = `fantasy-f1-round-${round}.png`;
+  const fileName = `downforce-round-${round}.png`;
 
   const text = [
     `🏎️ ${shownName}'s predictions for ${raceName} (Round ${round}) 🏁`,
@@ -57,7 +57,7 @@ export function SharePicks({
     `🟣 Fastest Lap: ${name(fastestLap)}`,
     `💥 First DNF: ${name(dnf)}`,
     "━━━━━━━━━━━━━━",
-    `🏆 Check my picks & challenge me:`,
+    `🏆 Check my picks & challenge me on DOWNFORCE:`,
     url,
   ].join("\n");
 
@@ -73,7 +73,7 @@ export function SharePicks({
     pole: ref(pole),
     fastestLap: ref(fastestLap),
     dnf: ref(dnf),
-    host: typeof window !== "undefined" ? window.location.host : "fantasy f1",
+    host: typeof window !== "undefined" ? window.location.host : "downforce",
   });
 
   // Live preview = exactly the image that gets shared.
@@ -121,7 +121,7 @@ export function SharePicks({
     const file = new File([blob], fileName, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: `Fantasy F1 — ${raceName}` });
+        await navigator.share({ files: [file], title: `DOWNFORCE — ${raceName}` });
         return;
       } catch (e) {
         if ((e as DOMException)?.name === "AbortError") return; // user closed the share sheet

@@ -10,11 +10,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/h2h")({
   head: () => ({
     meta: [
-      { title: "Head-to-head battles — Fantasy F1" },
-      { name: "description", content: "Compare any two players race by race in the Fantasy F1 league." },
-      { property: "og:title", content: "Head-to-head battles — Fantasy F1" },
+      { title: "Head-to-head battles — DOWNFORCE" },
+      { name: "description", content: "Compare any two players race by race in the DOWNFORCE league." },
+      { property: "og:title", content: "Head-to-head battles — DOWNFORCE" },
       { property: "og:description", content: "Who wins the rivalry? Race-by-race 1v1 comparison." },
-      { name: "twitter:title", content: "Head-to-head battles — Fantasy F1" },
+      { name: "twitter:title", content: "Head-to-head battles — DOWNFORCE" },
       { name: "twitter:description", content: "Who wins the rivalry? Race-by-race 1v1 comparison." },
     ],
   }),

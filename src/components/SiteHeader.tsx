@@ -23,8 +23,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
-        <Link to="/" className="flex min-w-0 items-center" aria-label="Fantasy F1 home">
-          <LogoHorizontal className="h-5 w-auto max-w-full sm:h-6" />
+        <Link to="/" className="flex min-w-0 shrink items-center" aria-label="DOWNFORCE home">
+          <LogoHorizontal className="h-8 w-auto max-w-full sm:h-10" />
         </Link>
 
         <nav className="ml-auto flex items-center gap-1">

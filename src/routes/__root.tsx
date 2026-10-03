@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BackgroundSync } from "@/components/BackgroundSync";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader, BottomNav } from "@/components/SiteHeader";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -81,24 +82,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fantasy F1 — Prediction League" },
+      { title: "DOWNFORCE — Fantasy Racing League" },
       {
         name: "description",
-        content: "Predict the F1 top 10, pole, fastest lap and DNF. Score points and win the league.",
+        content: "Predict the top 10, pole, fastest lap and DNF of every Grand Prix. Score points and win the league.",
       },
-      { property: "og:title", content: "Fantasy F1 — Prediction League" },
+      { property: "og:title", content: "DOWNFORCE — Fantasy Racing League" },
       {
         property: "og:description",
         content: "Call the grid. Beat your rivals. Take the top step.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "DOWNFORCE" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Fantasy F1 — Prediction League" },
-      { name: "twitter:description", content: "Predict the F1 top 10, pole, fastest lap and DNF. Score points and win the league." },
+      { name: "twitter:title", content: "DOWNFORCE — Fantasy Racing League" },
+      { name: "twitter:description", content: "Predict the top 10, pole, fastest lap and DNF of every Grand Prix. Score points and win the league." },
       { name: "theme-color", content: "#0E0E12" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Fantasy F1" },
+      { name: "apple-mobile-web-app-title", content: "DOWNFORCE" },
     ],
     links: [
       {
@@ -146,6 +148,7 @@ function RootComponent() {
       <SiteHeader />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <SiteFooter />
       <BottomNav />
       <Toaster />
     </QueryClientProvider>

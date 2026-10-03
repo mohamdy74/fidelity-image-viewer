@@ -10,18 +10,18 @@ import { useState } from "react";
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
-      { title: "League standings — Fantasy F1" },
+      { title: "League standings — DOWNFORCE" },
       {
         name: "description",
-        content: "Live Fantasy F1 prediction league standings for the season.",
+        content: "Live DOWNFORCE prediction league standings for the season.",
       },
-      { property: "og:title", content: "League standings — Fantasy F1" },
+      { property: "og:title", content: "League standings — DOWNFORCE" },
       {
         property: "og:description",
-        content: "See who is leading the Fantasy F1 prediction league.",
+        content: "See who is leading the DOWNFORCE prediction league.",
       },
-      { name: "twitter:title", content: "League standings — Fantasy F1" },
-      { name: "twitter:description", content: "See who is leading the Fantasy F1 prediction league." },
+      { name: "twitter:title", content: "League standings — DOWNFORCE" },
+      { name: "twitter:description", content: "See who is leading the DOWNFORCE prediction league." },
     ],
   }),
   component: Leaderboard,

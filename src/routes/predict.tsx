@@ -23,18 +23,18 @@ import { sortByTeam, teamColor, teamLabel, teamsOf } from "@/lib/teams";
 export const Route = createFileRoute("/predict")({
   head: () => ({
     meta: [
-      { title: "Make your picks — Fantasy F1" },
+      { title: "Make your picks — DOWNFORCE" },
       {
         name: "description",
         content:
           "Lock in your top 10 finishing order plus pole, fastest lap and DNF picks before the lights go out.",
       },
-      { property: "og:title", content: "Make your picks — Fantasy F1" },
+      { property: "og:title", content: "Make your picks — DOWNFORCE" },
       {
         property: "og:description",
         content: "Predict the top 10, pole, fastest lap and a DNF for the next Grand Prix.",
       },
-      { name: "twitter:title", content: "Make your picks — Fantasy F1" },
+      { name: "twitter:title", content: "Make your picks — DOWNFORCE" },
       { name: "twitter:description", content: "Predict the top 10, pole, fastest lap and a DNF for the next Grand Prix." },
     ],
   }),

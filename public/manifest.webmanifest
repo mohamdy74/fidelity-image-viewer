@@ -1,7 +1,7 @@
 {
-  "name": "Fantasy F1 — Prediction League",
-  "short_name": "Fantasy F1",
-  "description": "Predict the F1 top 10, pole, fastest lap and DNF before every Grand Prix.",
+  "name": "DOWNFORCE — Fantasy Racing League",
+  "short_name": "DOWNFORCE",
+  "description": "Predict the top 10, pole, fastest lap and DNF before every Grand Prix.",
   "start_url": "/predict",
   "scope": "/",
   "display": "standalone",

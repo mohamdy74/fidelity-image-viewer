@@ -9,18 +9,18 @@ import { lovable } from "@/integrations/lovable/index";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Join the league — Fantasy F1" },
+      { title: "Join the league — DOWNFORCE" },
       {
         name: "description",
-        content: "Sign in with Google to enter the Fantasy F1 prediction league.",
+        content: "Sign in with Google to join the DOWNFORCE prediction league.",
       },
-      { property: "og:title", content: "Join the league — Fantasy F1" },
+      { property: "og:title", content: "Join the league — DOWNFORCE" },
       {
         property: "og:description",
-        content: "Sign in with Google to enter the Fantasy F1 prediction league.",
+        content: "Sign in with Google to join the DOWNFORCE prediction league.",
       },
-      { name: "twitter:title", content: "Join the league — Fantasy F1" },
-      { name: "twitter:description", content: "Sign in with Google to enter the Fantasy F1 prediction league." },
+      { name: "twitter:title", content: "Join the league — DOWNFORCE" },
+      { name: "twitter:description", content: "Sign in with Google to join the DOWNFORCE prediction league." },
     ],
   }),
   component: AuthPage,

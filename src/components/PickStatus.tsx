@@ -27,18 +27,18 @@ function addToCalendar(race: Race) {
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Fantasy F1//Prediction League//EN",
+    "PRODID:-//DOWNFORCE//Fantasy Racing League//EN",
     "BEGIN:VEVENT",
-    `UID:${race.id}@fantasy-f1`,
+    `UID:${race.id}@downforce`,
     `DTSTAMP:${icsStamp(new Date())}`,
     `DTSTART:${icsStamp(start)}`,
     `DTEND:${icsStamp(end)}`,
-    `SUMMARY:Fantasy F1 — picks close: ${race.name}`,
+    `SUMMARY:DOWNFORCE — picks close: ${race.name}`,
     `DESCRIPTION:Lock in your top 10 before the deadline to avoid the -25 penalty.`,
     "BEGIN:VALARM",
     "TRIGGER:-PT60M",
     "ACTION:DISPLAY",
-    "DESCRIPTION:Fantasy F1 picks close in 1 hour",
+    "DESCRIPTION:DOWNFORCE picks close in 1 hour",
     "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
@@ -47,7 +47,7 @@ function addToCalendar(race: Race) {
   const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = `fantasy-f1-${race.round}.ics`;
+  a.download = `downforce-round-${race.round}.ics`;
   a.click();
   URL.revokeObjectURL(url);
 }
