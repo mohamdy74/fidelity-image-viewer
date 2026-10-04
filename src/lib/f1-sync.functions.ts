@@ -47,7 +47,8 @@ async function getJson<T>(url: string): Promise<T | null> {
 }
 
 export const syncF1Data = createServerFn({ method: "POST" })
-  .inputValidator((input: { force?: boolean } | undefined) => input ?? {})
+  // Public endpoint: callers cannot bypass the throttle. Returns only counts, never private data.
+  .inputValidator((_input: unknown) => ({ force: false as boolean }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
