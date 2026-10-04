@@ -111,13 +111,19 @@ export function SharePicks({
 
   async function handleDownloadImage() {
     const blob = await renderPickCard(cardData());
-    if (!blob) return toast.error("Couldn't create the image.");
+    if (!blob) {
+      toast.error("Couldn't create the image.");
+      return;
+    }
     saveBlob(blob);
   }
 
   async function handleShareImage() {
     const blob = await renderPickCard(cardData());
-    if (!blob) return toast.error("Couldn't create the image.");
+    if (!blob) {
+      toast.error("Couldn't create the image.");
+      return;
+    }
     const file = new File([blob], fileName, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
