@@ -29,6 +29,13 @@
       "when": 1790986516870,
       "tag": "0003_add_weekend_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791077730963,
+      "tag": "0004_restrict_league_reads_to_signed_in",
+      "breakpoints": true
     }
   ]
 }
