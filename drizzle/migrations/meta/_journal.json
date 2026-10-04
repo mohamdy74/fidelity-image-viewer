@@ -36,6 +36,13 @@
       "when": 1791077730963,
       "tag": "0004_restrict_league_reads_to_signed_in",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791078122048,
+      "tag": "0005_fix_weekend_session_type_values",
+      "breakpoints": true
     }
   ]
 }
