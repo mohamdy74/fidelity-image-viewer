@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Flag, Timer, Trophy } from "lucide-react";
 
-import heroImage from "@/assets/hero-f1.jpg";
+import heroImage from "@/assets/hero-f1.webp";
 import { Countdown } from "@/components/Countdown";
 import { PickStatus } from "@/components/PickStatus";
 import { Button } from "@/components/ui/button";
