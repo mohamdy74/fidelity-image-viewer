@@ -43,6 +43,13 @@
       "when": 1791078122048,
       "tag": "0005_fix_weekend_session_type_values",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791160079204,
+      "tag": "0006_league_official_scores_r14_r16",
+      "breakpoints": true
     }
   ]
 }
