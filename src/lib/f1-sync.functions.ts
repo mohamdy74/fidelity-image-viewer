@@ -153,7 +153,7 @@ export const syncF1Data = createServerFn({ method: "POST" })
 
       const rows = race.Results.map((res) => {
         const status = res.status ?? "";
-        const finished = /finished|\+\d+ lap/i.test(status);
+        const finished = /finished|lapped|\+\d+ lap/i.test(status);
         return {
           race_id: raceId,
           driver_id: res.Driver.driverId,
@@ -171,7 +171,11 @@ export const syncF1Data = createServerFn({ method: "POST" })
       await supabaseAdmin.from("races").update({ has_results: true }).eq("id", raceId);
     }
 
+    // ---- Fast fallback: official source still empty after the race → use live timing ----
+    await openF1Fallback(new Set(racesWithResults.map((r) => Number(r.round))));
+
     await scoreAllRaces();
+
 
     await supabaseAdmin
       .from("sync_state")
@@ -255,5 +259,102 @@ async function scoreAllRaces() {
     if (rows.length) {
       await supabaseAdmin.from("scores").upsert(rows, { onConflict: "user_id,race_id" });
     }
+  }
+}
+
+const OPENF1 = "https://api.openf1.org/v1";
+const RACE_DONE_MS = 2.5 * 60 * 60 * 1000; // race start + 2.5h ≈ chequered flag
+const FALLBACK_WINDOW_MS = 4 * 24 * 60 * 60 * 1000;
+
+type OF1Session = { session_key: number; session_name: string; date_start: string };
+type OF1Result = { position: number | null; driver_number: number; dnf?: boolean; dns?: boolean; dsq?: boolean };
+
+/**
+ * When the official results feed hasn't published a finished race yet, fill
+ * race_results from OpenF1 so scoring happens minutes after the flag. The
+ * official feed overwrites these rows (same keys) once it publishes.
+ */
+async function openF1Fallback(officialRounds: Set<number>) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const now = Date.now();
+
+  const { data: pending } = await supabaseAdmin
+    .from("races")
+    .select("id, round, race_at, qualifying_at")
+    .eq("season", SEASON)
+    .eq("has_results", false)
+    .lte("race_at", new Date(now - RACE_DONE_MS).toISOString())
+    .gte("race_at", new Date(now - FALLBACK_WINDOW_MS).toISOString());
+  const races = (pending ?? []).filter((r) => !officialRounds.has(r.round));
+  if (!races.length) return;
+
+  const sessions = await getJson<OF1Session[]>(`${OPENF1}/sessions?year=${SEASON}`);
+  const { data: drivers } = await supabaseAdmin.from("drivers").select("id, code");
+  const byCode = new Map((drivers ?? []).filter((d) => d.code).map((d) => [d.code!, d.id]));
+  if (!sessions?.length || !byCode.size) return;
+
+  const near = (name: string, iso: string | null) => {
+    if (!iso) return undefined;
+    const t = new Date(iso).getTime();
+    return sessions.find(
+      (s) => s.session_name === name && Math.abs(new Date(s.date_start).getTime() - t) < 6 * 3600_000,
+    );
+  };
+
+  for (const race of races) {
+    const rs = near("Race", race.race_at);
+    if (!rs) continue;
+    const [results, ofDrivers, laps] = await Promise.all([
+      getJson<OF1Result[]>(`${OPENF1}/session_result?session_key=${rs.session_key}`),
+      getJson<Array<{ driver_number: number; name_acronym: string }>>(
+        `${OPENF1}/drivers?session_key=${rs.session_key}`,
+      ),
+      getJson<Array<{ driver_number: number; lap_duration: number | null }>>(
+        `${OPENF1}/laps?session_key=${rs.session_key}`,
+      ),
+    ]);
+    if (!results || results.length < 10 || !ofDrivers) continue;
+
+    const numToId = new Map<number, string>();
+    for (const d of ofDrivers) {
+      const id = byCode.get(d.name_acronym);
+      if (id) numToId.set(d.driver_number, id);
+    }
+
+    let poleNum: number | undefined;
+    const qs = near("Qualifying", race.qualifying_at);
+    if (qs) {
+      const q = await getJson<OF1Result[]>(`${OPENF1}/session_result?session_key=${qs.session_key}`);
+      poleNum = q?.find((r) => r.position === 1)?.driver_number;
+    }
+    let flNum: number | undefined;
+    let best = Infinity;
+    for (const l of laps ?? []) {
+      if (l.lap_duration && l.lap_duration < best) {
+        best = l.lap_duration;
+        flNum = l.driver_number;
+      }
+    }
+
+    const rows = results.flatMap((r) => {
+      const driver_id = numToId.get(r.driver_number);
+      if (!driver_id) return [];
+      const finished = r.position != null && !r.dnf && !r.dns && !r.dsq;
+      return [
+        {
+          race_id: race.id,
+          driver_id,
+          position: finished ? r.position : null,
+          status: finished ? "Finished" : r.dsq ? "Disqualified" : "Retired",
+          finished,
+          fastest_lap: r.driver_number === flNum,
+          pole: r.driver_number === poleNum,
+        },
+      ];
+    });
+    if (rows.length < 10) continue;
+
+    await supabaseAdmin.from("race_results").upsert(rows, { onConflict: "race_id,driver_id" });
+    await supabaseAdmin.from("races").update({ has_results: true }).eq("id", race.id);
   }
 }

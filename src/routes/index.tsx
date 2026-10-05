@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Flag, Timer, Trophy } from "lucide-react";
 
-import heroImage from "@/assets/hero-f1.jpg";
+import heroImage from "@/assets/hero-f1.webp";
 import { Countdown } from "@/components/Countdown";
 import { PickStatus } from "@/components/PickStatus";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,8 @@ function Home() {
           alt="Racing car at night"
           width={1600}
           height={912}
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover opacity-45"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
