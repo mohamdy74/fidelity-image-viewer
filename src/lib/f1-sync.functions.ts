@@ -153,7 +153,7 @@ export const syncF1Data = createServerFn({ method: "POST" })
 
       const rows = race.Results.map((res) => {
         const status = res.status ?? "";
-        const finished = /finished|\+\d+ lap/i.test(status);
+        const finished = /finished|lapped|\+\d+ lap/i.test(status);
         return {
           race_id: raceId,
           driver_id: res.Driver.driverId,
@@ -171,7 +171,11 @@ export const syncF1Data = createServerFn({ method: "POST" })
       await supabaseAdmin.from("races").update({ has_results: true }).eq("id", raceId);
     }
 
+    // ---- Fast fallback: official source still empty after the race → use live timing ----
+    await openF1Fallback(new Set(racesWithResults.map((r) => Number(r.round))));
+
     await scoreAllRaces();
+
 
     await supabaseAdmin
       .from("sync_state")
