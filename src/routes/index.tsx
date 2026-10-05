@@ -49,6 +49,8 @@ function Home() {
           alt="Racing car at night"
           width={1600}
           height={912}
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover opacity-45"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
