@@ -21,6 +21,7 @@ export function SharePicks({
   pole,
   fastestLap,
   dnf,
+  lockedAt,
 }: {
   raceName: string;
   round: number;
@@ -30,6 +31,7 @@ export function SharePicks({
   pole: string | null;
   fastestLap: string | null;
   dnf: string | null;
+  lockedAt?: string | null;
 }) {
   const { user } = useAuth();
   // Use the same name the league table shows; fall back to the Google name.
@@ -74,6 +76,7 @@ export function SharePicks({
     fastestLap: ref(fastestLap),
     dnf: ref(dnf),
     host: typeof window !== "undefined" ? window.location.host : "downforce",
+    lockedAt,
   });
 
   // Live preview = exactly the image that gets shared.

@@ -15,6 +15,7 @@ export type CardData = {
   fastestLap: CardDriver;
   dnf: CardDriver;
   host: string;
+  lockedAt?: string | null | undefined;
 };
 
 // Hex versions of the --team-* tokens in styles.css (canvas can't read CSS variables).
@@ -225,7 +226,13 @@ export function drawPickCard(ctx: Ctx, d: CardData) {
   ctx.fillStyle = "rgba(164,164,171,0.6)";
   ctx.font = MONO(15);
   spaced(ctx, 3);
-  ctx.fillText("UNOFFICIAL NON-PROFIT FAN PROJECT", CARD_W / 2, CARD_H - 12);
+  ctx.fillText(
+    d.lockedAt
+      ? `LOCKED ${new Date(d.lockedAt).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).toUpperCase()} CAIRO`
+      : "UNOFFICIAL NON-PROFIT FAN PROJECT",
+    CARD_W / 2,
+    CARD_H - 12,
+  );
   spaced(ctx, 0);
   ctx.textAlign = "left";
 }
