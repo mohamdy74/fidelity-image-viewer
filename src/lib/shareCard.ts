@@ -15,7 +15,7 @@ export type CardData = {
   fastestLap: CardDriver;
   dnf: CardDriver;
   host: string;
-  lockedAt?: string | null;
+  lockedAt?: string | null | undefined;
 };
 
 // Hex versions of the --team-* tokens in styles.css (canvas can't read CSS variables).
