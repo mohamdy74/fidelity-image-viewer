@@ -50,6 +50,13 @@
       "when": 1791160079204,
       "tag": "0006_league_official_scores_r14_r16",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791245928883,
+      "tag": "0007_prediction_audit_log",
+      "breakpoints": true
     }
   ]
 }

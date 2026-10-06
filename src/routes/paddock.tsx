@@ -66,11 +66,23 @@ function Paddock() {
           .eq("race_id", race!.id),
         supabase.from("scores").select("user_id, points").eq("race_id", race!.id),
       ]);
+      const logs = await supabase
+        .from("prediction_logs")
+        .select("user_id, action, changes, created_at")
+        .eq("race_id", race!.id)
+        .order("created_at");
+      const logMap = new Map<string, { action: string; changes: unknown; created_at: string }[]>();
+      for (const l of logs.data ?? []) {
+        const arr = logMap.get(l.user_id) ?? [];
+        arr.push(l);
+        logMap.set(l.user_id, arr);
+      }
       return {
         preds: (preds.data ?? []) as Pred[],
         names: new Map((profiles.data ?? []).map((p) => [p.id, p.display_name])),
         results: results.data ?? [],
         points: new Map((scores.data ?? []).map((s) => [s.user_id, s.points])),
+        logs: logMap,
       };
     },
   });
@@ -186,6 +198,7 @@ function Paddock() {
                 <BonusChip label="FL" code={byId.get(p.fastest_lap_driver_id ?? "")?.code} hit={hasResults ? p.fastest_lap_driver_id === flId : null} pts={3} />
                 <BonusChip label="DNF" code={byId.get(p.dnf_driver_id ?? "")?.code} hit={hasResults ? !!p.dnf_driver_id && dnfs.has(p.dnf_driver_id) : null} pts={1} />
               </div>
+              <AuditTrail entries={data?.logs.get(p.user_id) ?? []} code={(id) => byId.get(id)?.code ?? id} />
             </section>
           );
         })}

@@ -247,11 +247,17 @@ async function scoreAllRaces() {
         results as ResultRow[],
       );
 
+      // A pole-only save (top 10 never completed) still counts as a missed race
+      // submission — the pole points are kept on top of the penalty.
+      const poleOnly = (prediction.top10 ?? []).length < 10;
+      const total = poleOnly ? NO_SUBMISSION_PENALTY + breakdown.pole : breakdown.total;
       rows.push({
         user_id: profile.id,
         race_id: race.id,
-        points: breakdown.total,
-        breakdown: { ...breakdown },
+        points: total,
+        breakdown: poleOnly
+          ? { noSubmission: true, poleOnly: true, pole: breakdown.pole, total }
+          : { ...breakdown },
         updated_at: new Date().toISOString(),
       });
     }

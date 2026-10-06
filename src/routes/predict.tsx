@@ -96,8 +96,10 @@ function Predict() {
   useEffect(() => {
     if (!prediction) return;
     const saved = prediction.top10 ?? [];
-    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
     setPole(prediction.pole_driver_id ?? EMPTY);
+    // A pole-only save has no top 10 yet — keep whatever the player is building.
+    if (saved.length === 0) return;
+    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
     setFastestLap(prediction.fastest_lap_driver_id ?? EMPTY);
     setDnf(prediction.dnf_driver_id ?? EMPTY);
   }, [prediction]);
@@ -207,6 +209,60 @@ function Predict() {
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
+  // Pole can be saved alone (before the top 10 is ready) until qualifying starts.
+  async function savePole() {
+    if (pole === EMPTY) {
+      toast.error("Choose a pole driver first.");
+      return;
+    }
+    setSaving(true);
+    const upd = await supabase
+      .from("predictions")
+      .update({ pole_driver_id: pole })
+      .eq("user_id", user!.id)
+      .eq("race_id", race!.id)
+      .select("id");
+    let error = upd.error;
+    if (!error && !upd.data?.length) {
+      const ins = await supabase
+        .from("predictions")
+        .insert({ user_id: user!.id, race_id: race!.id, pole_driver_id: pole, top10: [] });
+      error = ins.error;
+    }
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Pole pick saved.");
+    queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
+  }
+
+  async function sharePole() {
+    if (!prediction?.pole_driver_id) return;
+    const d = (drivers ?? []).find((x) => x.id === prediction.pole_driver_id);
+    const at = new Date(prediction.updated_at).toLocaleString("en-GB", {
+      timeZone: "Africa/Cairo",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const text = `⚡ My pole pick for ${race!.name} (Round ${race!.round}): ${d?.full_name ?? "—"}\n🔒 Saved ${at} (Cairo)\n${window.location.origin}/predict`;
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        toast.success("Pole pick copied — paste it in the group chat.");
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  const savedPole = prediction?.pole_driver_id ?? null;
+  const poleDirty = (savedPole ?? EMPTY) !== pole;
+
   return (
     <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
@@ -247,6 +303,23 @@ function Predict() {
               disabled={poleLocked || viewOnly}
               onChange={setPole}
             />
+            {!poleLocked && !hasSaved && (
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="outline" disabled={saving || !poleDirty || pole === EMPTY} onClick={savePole}>
+                  {savedPole && !poleDirty ? "Pole saved ✓" : "Save pole only"}
+                </Button>
+                {savedPole && !poleDirty && (
+                  <Button size="sm" variant="outline" onClick={sharePole}>
+                    Share pole
+                  </Button>
+                )}
+              </div>
+            )}
+            {!poleLocked && !hasSaved && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Save your pole now and finish the top 10 later. You can change it until qualifying starts.
+              </p>
+            )}
           </Field>
           <Field label="Fastest lap (+3)" purple>
             <DriverSelect
