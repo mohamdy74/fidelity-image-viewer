@@ -96,8 +96,10 @@ function Predict() {
   useEffect(() => {
     if (!prediction) return;
     const saved = prediction.top10 ?? [];
-    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
     setPole(prediction.pole_driver_id ?? EMPTY);
+    // A pole-only save has no top 10 yet — keep whatever the player is building.
+    if (saved.length === 0) return;
+    setTop10(Array.from({ length: 10 }, (_, i) => saved[i] ?? EMPTY));
     setFastestLap(prediction.fastest_lap_driver_id ?? EMPTY);
     setDnf(prediction.dnf_driver_id ?? EMPTY);
   }, [prediction]);
