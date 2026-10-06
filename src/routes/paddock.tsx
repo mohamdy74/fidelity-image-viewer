@@ -222,3 +222,47 @@ function BonusChip({ label, code, hit, pts }: { label: string; code?: string | n
     </div>
   );
 }
+
+const ACTION_LABEL: Record<string, string> = { locked: "Locked picks", edited: "Edited picks", pole: "Pole pick" };
+
+function AuditTrail({
+  entries,
+  code,
+}: {
+  entries: { action: string; changes: unknown; created_at: string }[];
+  code: (id: string) => string;
+}) {
+  if (!entries.length) return null;
+  const fmt = (t: string) =>
+    new Date(t).toLocaleString("en-GB", {
+      timeZone: "Africa/Cairo",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const describe = (c: unknown): string => {
+    const ch = (c ?? {}) as Record<string, unknown>;
+    const parts: string[] = [];
+    for (const [k, label] of [["pole", "Pole"], ["fl", "FL"], ["dnf", "DNF"]] as const) {
+      const v = ch[k];
+      if (Array.isArray(v)) parts.push(`${label} ${v[0] ? code(String(v[0])) : "—"}→${v[1] ? code(String(v[1])) : "—"}`);
+      else if (typeof v === "string") parts.push(`${label} ${code(v)}`);
+    }
+    if (Array.isArray(ch["top10"]) && Array.isArray((ch["top10"] as unknown[])[0])) parts.push("top 10 changed");
+    return parts.join(" · ");
+  };
+  return (
+    <details className="mt-2 text-xs text-muted-foreground">
+      <summary className="cursor-pointer">
+        {entries.length} change{entries.length > 1 ? "s" : ""} · last {fmt(entries[entries.length - 1]!.created_at)} (Cairo)
+      </summary>
+      <ul className="mt-1 space-y-0.5 font-mono">
+        {entries.map((e, i) => (
+          <li key={i}>
+            {fmt(e.created_at)} — {ACTION_LABEL[e.action] ?? e.action} {describe(e.changes)}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
