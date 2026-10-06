@@ -207,6 +207,60 @@ function Predict() {
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
+  // Pole can be saved alone (before the top 10 is ready) until qualifying starts.
+  async function savePole() {
+    if (pole === EMPTY) {
+      toast.error("Choose a pole driver first.");
+      return;
+    }
+    setSaving(true);
+    const upd = await supabase
+      .from("predictions")
+      .update({ pole_driver_id: pole })
+      .eq("user_id", user!.id)
+      .eq("race_id", race!.id)
+      .select("id");
+    let error = upd.error;
+    if (!error && !upd.data?.length) {
+      const ins = await supabase
+        .from("predictions")
+        .insert({ user_id: user!.id, race_id: race!.id, pole_driver_id: pole, top10: [] });
+      error = ins.error;
+    }
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Pole pick saved.");
+    queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
+  }
+
+  async function sharePole() {
+    if (!prediction?.pole_driver_id) return;
+    const d = (drivers ?? []).find((x) => x.id === prediction.pole_driver_id);
+    const at = new Date(prediction.updated_at).toLocaleString("en-GB", {
+      timeZone: "Africa/Cairo",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const text = `⚡ My pole pick for ${race!.name} (Round ${race!.round}): ${d?.full_name ?? "—"}\n🔒 Saved ${at} (Cairo)\n${window.location.origin}/predict`;
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        toast.success("Pole pick copied — paste it in the group chat.");
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  const savedPole = prediction?.pole_driver_id ?? null;
+  const poleDirty = (savedPole ?? EMPTY) !== pole;
+
   return (
     <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
