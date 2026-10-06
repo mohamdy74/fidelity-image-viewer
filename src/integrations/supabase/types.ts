@@ -41,6 +41,44 @@ export type Database = {
         }
         Relationships: []
       }
+      prediction_logs: {
+        Row: {
+          action: string
+          changes: Json
+          created_at: string
+          id: string
+          prediction_id: string
+          race_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          prediction_id: string
+          race_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          prediction_id?: string
+          race_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_logs_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictions: {
         Row: {
           created_at: string
