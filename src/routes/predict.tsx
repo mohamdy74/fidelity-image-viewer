@@ -89,6 +89,7 @@ function Predict() {
   const [fastestLap, setFastestLap] = useState(EMPTY);
   const [dnf, setDnf] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [lightsOut, setLightsOut] = useState(false);
   const endLights = useCallback(() => setLightsOut(false), []);
 
@@ -106,6 +107,9 @@ function Predict() {
   const poleLocked =
     raceLocked ||
     (!!race?.qualifying_at && new Date(race.qualifying_at).getTime() <= now);
+  const hasSaved = !!prediction && (prediction.top10?.length ?? 0) === 10;
+  // Saved picks open in view mode so stray taps while scrolling can't change them.
+  const viewOnly = raceLocked || (hasSaved && !editing);
 
   if (loading) {
     return <Shell>Loading…</Shell>;
@@ -197,6 +201,7 @@ function Predict() {
       return;
     }
     toast.success("Predictions locked in.");
+    setEditing(false);
     navigator.vibrate?.([12, 40, 18]);
     setLightsOut(true);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
@@ -225,7 +230,7 @@ function Predict() {
         drivers={drivers ?? []}
         top10={top10}
         setTop10={setTop10}
-        locked={raceLocked}
+        locked={viewOnly}
         onRepeat={lastPicks ? repeatLast : undefined}
       />
       {duplicates && (
@@ -239,7 +244,7 @@ function Predict() {
             <DriverSelect
               drivers={drivers ?? []}
               value={pole}
-              disabled={poleLocked}
+              disabled={poleLocked || viewOnly}
               onChange={setPole}
             />
           </Field>
@@ -247,7 +252,7 @@ function Predict() {
             <DriverSelect
               drivers={drivers ?? []}
               value={fastestLap}
-              disabled={raceLocked}
+              disabled={viewOnly}
               onChange={setFastestLap}
             />
           </Field>
@@ -255,7 +260,7 @@ function Predict() {
             <DriverSelect
               drivers={(drivers ?? []).filter((d) => !/aston|cadillac/i.test(d.team ?? ""))}
               value={dnf}
-              disabled={raceLocked}
+              disabled={viewOnly}
               exclude={usedInTop10}
               onChange={setDnf}
             />
@@ -268,7 +273,7 @@ function Predict() {
         </div>
       </section>
 
-      {prediction && prediction.top10?.length === 10 && (
+      {hasSaved && viewOnly && prediction && (
         <div className="mt-6">
           <SharePicks
             raceName={race.name}
@@ -279,19 +284,41 @@ function Predict() {
             pole={prediction.pole_driver_id}
             fastestLap={prediction.fastest_lap_driver_id}
             dnf={prediction.dnf_driver_id}
+            lockedAt={prediction.updated_at}
           />
         </div>
       )}
 
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mt-4 rounded-lg bg-background/80 p-2 backdrop-blur-md md:bottom-3">
-        <Button
-          size="lg"
-          className="h-12 w-full text-base"
-          disabled={saving || raceLocked}
-          onClick={save}
-        >
-          {raceLocked ? "Picks locked — race started" : saving ? "Saving…" : "Lock in picks"}
-        </Button>
+        {raceLocked ? (
+          <Button size="lg" className="h-12 w-full text-base" disabled>
+            Picks locked — race started
+          </Button>
+        ) : viewOnly ? (
+          <Button size="lg" variant="outline" className="h-12 w-full text-base" onClick={() => setEditing(true)}>
+            Edit picks
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            {hasSaved && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 text-base"
+                disabled={saving}
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["prediction", race.id, user.id] });
+                  setEditing(false);
+                }}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button size="lg" className="h-12 flex-1 text-base" disabled={saving} onClick={save}>
+              {saving ? "Saving…" : "Lock in picks"}
+            </Button>
+          </div>
+        )}
       </div>
       {lightsOut && <LightsOut onDone={endLights} />}
     </main>
