@@ -301,6 +301,23 @@ function Predict() {
               disabled={poleLocked || viewOnly}
               onChange={setPole}
             />
+            {!poleLocked && !hasSaved && (
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="outline" disabled={saving || !poleDirty || pole === EMPTY} onClick={savePole}>
+                  {savedPole && !poleDirty ? "Pole saved ✓" : "Save pole only"}
+                </Button>
+                {savedPole && !poleDirty && (
+                  <Button size="sm" variant="outline" onClick={sharePole}>
+                    Share pole
+                  </Button>
+                )}
+              </div>
+            )}
+            {!poleLocked && !hasSaved && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Save your pole now and finish the top 10 later. You can change it until qualifying starts.
+              </p>
+            )}
           </Field>
           <Field label="Fastest lap (+3)" purple>
             <DriverSelect
