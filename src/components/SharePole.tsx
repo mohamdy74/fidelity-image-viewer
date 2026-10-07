@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, Image as ImageIcon, Share2 } from "lucide-react";
+import { Copy, Download, Flag, Image as ImageIcon, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,33 +8,34 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Driver } from "@/lib/queries";
-import { renderPickCard, type CardData, type CardDriver } from "@/lib/shareCard";
+import { formatCairo, renderPoleCard, type PoleCardData } from "@/lib/shareCard";
 
-const MEDAL = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
-
-export function SharePicks({
+/**
+ * Stand-alone "pole position" share card. Works with or without a saved top 10:
+ * all it needs is the race, the player and the driver picked for pole.
+ */
+export function SharePole({
   raceName,
   round,
   playerName,
-  drivers,
-  top10,
-  pole,
-  fastestLap,
-  dnf,
-  lockedAt,
+  driver,
+  savedAt,
+  circuit,
+  className,
 }: {
   raceName: string;
   round: number;
   playerName: string;
-  drivers: Driver[];
-  top10: string[];
-  pole: string | null;
-  fastestLap: string | null;
-  dnf: string | null;
-  lockedAt?: string | null;
+  /** the driver picked for pole (null/undefined = nothing picked yet) */
+  driver: Driver | null | undefined;
+  /** ISO time the pole pick was saved; shown on the card in Cairo time */
+  savedAt: string | null | undefined;
+  /** circuit / location line shown under the race name */
+  circuit?: string | null | undefined;
+  className?: string;
 }) {
   const { user } = useAuth();
-  // Use the same name the league table shows; fall back to the Google name.
+  // Same name the league table shows; falls back to the Google name.
   const { data: leagueName } = useQuery({
     queryKey: ["profile-name", user?.id],
     enabled: !!user,
@@ -45,49 +46,40 @@ export function SharePicks({
     },
   });
   const shownName = (leagueName || playerName || "Player").trim();
-
-  const byId = new Map(drivers.map((d) => [d.id, d]));
-  const name = (id: string | null) => (id ? (byId.get(id)?.full_name ?? "—") : "—");
+  const when = formatCairo(savedAt, true);
   const url = typeof window !== "undefined" ? `${window.location.origin}/predict` : "";
-  const fileName = `downforce-round-${round}.png`;
+  const fileName = `downforce-pole-round-${round}.png`;
 
   const text = [
-    `🏎️ ${shownName}'s predictions for ${raceName} (Round ${round}) 🏁`,
-    "━━━━━━━━━━━━━━",
-    ...top10.map((id, i) => `${MEDAL[i]} P${i + 1}: ${name(id)}`),
-    `⚡ Pole: ${name(pole)}`,
-    `🟣 Fastest Lap: ${name(fastestLap)}`,
-    `💥 DNF pick: ${name(dnf)}`,
-    "━━━━━━━━━━━━━━",
-    `🏆 Check my picks & challenge me on DOWNFORCE:`,
+    `⚡ ${shownName}'s pole pick for ${raceName} (Round ${round})`,
+    `🏁 Pole: ${driver?.full_name ?? "—"}`,
+    when ? `🔒 Locked in ${when.replace(" · ", ", ")} (Cairo time)` : "",
+    `🏆 Beat me on DOWNFORCE:`,
     url,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
-  const ref = (id: string | null): CardDriver => {
-    const d = id ? byId.get(id) : undefined;
-    return d ? { code: d.code, name: d.full_name, team: d.team } : null;
-  };
-  const cardData = (): CardData => ({
+  const card = (): PoleCardData => ({
     raceName,
     round,
     playerName: shownName,
-    top10: top10.map(ref),
-    pole: ref(pole),
-    fastestLap: ref(fastestLap),
-    dnf: ref(dnf),
+    driver: driver
+      ? { code: driver.code, name: driver.full_name, team: driver.team, number: driver.number }
+      : null,
+    circuit,
+    savedAtLabel: when,
     host: typeof window !== "undefined" ? window.location.host : "downforce",
-    lockedAt,
   });
 
-  // Live preview = exactly the image that gets shared.
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const key = [raceName, round, shownName, top10.join(","), pole, fastestLap, dnf, drivers.length].join("|");
+  const key = [raceName, round, shownName, driver?.id, savedAt].join("|");
   useEffect(() => {
     if (!open) return;
     let dead = false;
     let objectUrl: string | null = null;
-    renderPickCard(cardData()).then((blob) => {
+    renderPoleCard(card()).then((blob) => {
       if (!blob || dead) return;
       objectUrl = URL.createObjectURL(blob);
       setPreview(objectUrl);
@@ -112,34 +104,28 @@ export function SharePicks({
     toast.success("Image saved.");
   }
 
-  async function handleDownloadImage() {
-    const blob = await renderPickCard(cardData());
-    if (!blob) {
-      toast.error("Couldn't create the image.");
-      return;
-    }
+  async function handleDownload() {
+    const blob = await renderPoleCard(card());
+    if (!blob) return toast.error("Couldn't create the image.");
     saveBlob(blob);
   }
 
   async function handleShareImage() {
-    const blob = await renderPickCard(cardData());
-    if (!blob) {
-      toast.error("Couldn't create the image.");
-      return;
-    }
+    const blob = await renderPoleCard(card());
+    if (!blob) return toast.error("Couldn't create the image.");
     const file = new File([blob], fileName, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: `DOWNFORCE — ${raceName}` });
+        await navigator.share({ files: [file], title: `DOWNFORCE — ${raceName} pole pick` });
         return;
       } catch (e) {
-        if ((e as DOMException)?.name === "AbortError") return; // user closed the share sheet
+        if ((e as DOMException)?.name === "AbortError") return;
       }
     }
-    saveBlob(blob); // browser can't share images: download instead
+    saveBlob(blob);
   }
 
-  async function nativeShareText() {
+  async function shareText() {
     if (navigator.share) {
       try {
         await navigator.share({ text });
@@ -154,32 +140,36 @@ export function SharePicks({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" className="h-12 w-full gap-2 border-gold/60 text-gold">
-          <Share2 className="h-4 w-4" />
-          Share Picks 🏁
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!driver}
+          className={className ?? "h-11 w-full gap-2 border-gold/60 text-gold"}
+        >
+          <Flag className="h-4 w-4" />
+          Share pole card
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92dvh] max-w-sm overflow-y-auto p-0">
-        <DialogTitle className="sr-only">Share your picks</DialogTitle>
+        <DialogTitle className="sr-only">Share your pole pick</DialogTitle>
         <div className="aspect-[4/5] w-full overflow-hidden rounded-t-lg bg-muted/40">
           {preview ? (
-            <img src={preview} alt={`${shownName}'s picks for ${raceName}`} className="h-full w-full" />
+            <img src={preview} alt={`${shownName}'s pole pick for ${raceName}`} className="h-full w-full" />
           ) : (
             <div className="h-full w-full animate-pulse" />
           )}
         </div>
-
         <div className="space-y-2 p-3">
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={handleShareImage} className="gap-2">
               <ImageIcon className="h-4 w-4" /> Share Card
             </Button>
-            <Button variant="outline" onClick={handleDownloadImage} className="gap-2">
+            <Button variant="outline" onClick={handleDownload} className="gap-2">
               <Download className="h-4 w-4" /> Save PNG
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="ghost" onClick={nativeShareText} className="h-9 gap-1.5 text-xs">
+            <Button variant="ghost" onClick={shareText} className="h-9 gap-1.5 text-xs">
               <Share2 className="h-3.5 w-3.5" /> Share Text
             </Button>
             <Button

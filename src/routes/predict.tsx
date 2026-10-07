@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Countdown } from "@/components/Countdown";
 import { LightsOut } from "@/components/LightsOut";
 import { SharePicks } from "@/components/SharePicks";
+import { SharePole } from "@/components/SharePole";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -42,6 +43,30 @@ export const Route = createFileRoute("/predict")({
 });
 
 const EMPTY = "__none__";
+
+// The database only keeps one "updated_at" per prediction, which moves whenever the top 10
+// changes. So we also remember (on this device) the moment the pole pick itself was saved.
+const poleAtKey = (userId: string, raceId: string) => `dfr:pole-at:${userId}:${raceId}`;
+function readPoleAt(userId: string, raceId: string, driverId: string): string | null {
+  try {
+    const raw = window.localStorage.getItem(poleAtKey(userId, raceId));
+    if (!raw) return null;
+    const v = JSON.parse(raw) as { driver?: string; at?: string };
+    return v.driver === driverId && v.at ? v.at : null;
+  } catch {
+    return null;
+  }
+}
+function writePoleAt(userId: string, raceId: string, driverId: string) {
+  try {
+    window.localStorage.setItem(
+      poleAtKey(userId, raceId),
+      JSON.stringify({ driver: driverId, at: new Date().toISOString() }),
+    );
+  } catch {
+    /* storage unavailable: the card falls back to the server time */
+  }
+}
 
 function Predict() {
   const { user, loading } = useAuth();
@@ -203,6 +228,7 @@ function Predict() {
       return;
     }
     toast.success("Predictions locked in.");
+    if (!poleLocked && pole !== EMPTY && pole !== savedPole) writePoleAt(user!.id, race!.id, pole);
     setEditing(false);
     navigator.vibrate?.([12, 40, 18]);
     setLightsOut(true);
@@ -235,33 +261,16 @@ function Predict() {
       return;
     }
     toast.success("Pole pick saved.");
+    writePoleAt(user!.id, race!.id, pole);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
-  }
-
-  async function sharePole() {
-    if (!prediction?.pole_driver_id) return;
-    const d = (drivers ?? []).find((x) => x.id === prediction.pole_driver_id);
-    const at = new Date(prediction.updated_at).toLocaleString("en-GB", {
-      timeZone: "Africa/Cairo",
-      weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    const text = `⚡ My pole pick for ${race!.name} (Round ${race!.round}): ${d?.full_name ?? "—"}\n🔒 Saved ${at} (Cairo)\n${window.location.origin}/predict`;
-    try {
-      if (navigator.share) await navigator.share({ text });
-      else {
-        await navigator.clipboard.writeText(text);
-        toast.success("Pole pick copied — paste it in the group chat.");
-      }
-    } catch {
-      /* user cancelled */
-    }
   }
 
   const savedPole = prediction?.pole_driver_id ?? null;
   const poleDirty = (savedPole ?? EMPTY) !== pole;
+  const savedPoleDriver = savedPole ? (drivers ?? []).find((d) => d.id === savedPole) : undefined;
+  const poleSavedAt = savedPole
+    ? (readPoleAt(user.id, race.id, savedPole) ?? prediction?.updated_at ?? null)
+    : null;
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
@@ -282,6 +291,78 @@ function Predict() {
         <Countdown target={race.race_at} label="Top 10 / bonus picks close in" />
       </div>
 
+      <section
+        className="carbon-panel mt-6 rounded-lg border-l-4 p-4 sm:p-5"
+        style={{ borderLeftColor: "var(--gold)" }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-gold">
+              Pole position · +3
+            </p>
+            <h2 className="mt-1 text-xl">Who takes pole?</h2>
+          </div>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest",
+              poleLocked
+                ? "border-border text-muted-foreground"
+                : savedPole && !poleDirty
+                  ? "border-success/60 text-success"
+                  : "border-gold/60 text-gold",
+            )}
+          >
+            {poleLocked
+              ? "Locked"
+              : savedPole && !poleDirty
+                ? "Saved ✓"
+                : poleDirty && pole !== EMPTY
+                  ? "Not saved"
+                  : "No pick yet"}
+          </span>
+        </div>
+
+        <div className="mt-4">
+          <DriverSelect
+            drivers={drivers ?? []}
+            value={pole}
+            disabled={poleLocked}
+            onChange={setPole}
+          />
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {!poleLocked && (
+            <Button
+              type="button"
+              disabled={saving || !poleDirty || pole === EMPTY}
+              onClick={savePole}
+              className="h-11"
+            >
+              {savedPole && !poleDirty ? "Pole saved ✓" : "Save pole"}
+            </Button>
+          )}
+          {savedPole && (
+            <SharePole
+              raceName={race.name}
+              round={race.round}
+              playerName={(user.user_metadata?.["full_name"] as string | undefined) ?? "Me"}
+              driver={savedPoleDriver}
+              savedAt={poleSavedAt}
+              circuit={[race.circuit, race.country].filter(Boolean).join(" · ")}
+            />
+          )}
+        </div>
+
+        <p className="mt-2 text-xs text-muted-foreground">
+          {poleLocked
+            ? "Qualifying has started, so the pole pick is locked."
+            : savedPole && poleDirty
+              ? "Save to update your pole card. The card always shows your saved pick."
+              : "Save it now and finish your top 10 later. You can change it until qualifying starts."}
+        </p>
+      </section>
+
       <GridPicker
         drivers={drivers ?? []}
         top10={top10}
@@ -296,31 +377,6 @@ function Predict() {
       <section className="carbon-panel mt-6 rounded-lg p-4 sm:p-5">
         <h2 className="text-xl">Bonus picks</h2>
         <div className="mt-4 space-y-4">
-          <Field label={poleLocked ? "Pole position (locked)" : "Pole position (+3)"}>
-            <DriverSelect
-              drivers={drivers ?? []}
-              value={pole}
-              disabled={poleLocked || viewOnly}
-              onChange={setPole}
-            />
-            {!poleLocked && !hasSaved && (
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" variant="outline" disabled={saving || !poleDirty || pole === EMPTY} onClick={savePole}>
-                  {savedPole && !poleDirty ? "Pole saved ✓" : "Save pole only"}
-                </Button>
-                {savedPole && !poleDirty && (
-                  <Button size="sm" variant="outline" onClick={sharePole}>
-                    Share pole
-                  </Button>
-                )}
-              </div>
-            )}
-            {!poleLocked && !hasSaved && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Save your pole now and finish the top 10 later. You can change it until qualifying starts.
-              </p>
-            )}
-          </Field>
           <Field label="Fastest lap (+3)" purple>
             <DriverSelect
               drivers={drivers ?? []}
