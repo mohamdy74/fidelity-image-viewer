@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 
 import { LogoHorizontal } from "@/components/Logo";
 
@@ -11,6 +11,10 @@ const FOOTER_LINKS = [
 
 /** Site-wide footer with the "unofficial / non-profit" disclaimer. */
 export function SiteFooter() {
+  // The disclaimer footer is shown on the Paddock tab (home) only.
+  const { pathname } = useLocation();
+  if (pathname !== "/") return null;
+
   return (
     <footer className="mt-12 border-t border-border bg-background/70">
       <div className="kerb-strip" />
