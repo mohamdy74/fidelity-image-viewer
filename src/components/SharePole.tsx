@@ -106,14 +106,22 @@ export function SharePole({
 
   async function handleDownload() {
     const blob = await renderPoleCard(card());
-    if (!blob) return toast.error("Couldn't create the image.");
+    if (!blob) {
+      toast.error("Couldn't create the image.");
+      return;
+    }
     saveBlob(blob);
   }
 
   async function handleShareImage() {
     const blob = await renderPoleCard(card());
-    if (!blob) return toast.error("Couldn't create the image.");
+    if (!blob) {
+      toast.error("Couldn't create the image.");
+      return;
+    }
     const file = new File([blob], fileName, { type: "image/png" });
+    
+
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: `DOWNFORCE — ${raceName} pole pick` });
