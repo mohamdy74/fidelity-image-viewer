@@ -16,6 +16,7 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as PaddockRouteImport } from './routes/paddock'
 import { Route as PredictRouteImport } from './routes/predict'
 import { Route as RulesRouteImport } from './routes/rules'
+import { Route as SprintRouteImport } from './routes/sprint'
 import { Route as WeekendRouteImport } from './routes/weekend'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const RulesRoute = RulesRouteImport.update({
   path: '/rules',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SprintRoute = SprintRouteImport.update({
+  id: '/sprint',
+  path: '/sprint',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WeekendRoute = WeekendRouteImport.update({
   id: '/weekend',
   path: '/weekend',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/paddock': typeof PaddockRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
+  '/sprint': typeof SprintRoute
   '/weekend': typeof WeekendRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/paddock': typeof PaddockRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
+  '/sprint': typeof SprintRoute
   '/weekend': typeof WeekendRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/paddock': typeof PaddockRoute
   '/predict': typeof PredictRoute
   '/rules': typeof RulesRoute
+  '/sprint': typeof SprintRoute
   '/weekend': typeof WeekendRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/paddock'
     | '/predict'
     | '/rules'
+    | '/sprint'
     | '/weekend'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/paddock'
     | '/predict'
     | '/rules'
+    | '/sprint'
     | '/weekend'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/paddock'
     | '/predict'
     | '/rules'
+    | '/sprint'
     | '/weekend'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   PaddockRoute: typeof PaddockRoute
   PredictRoute: typeof PredictRoute
   RulesRoute: typeof RulesRoute
+  SprintRoute: typeof SprintRoute
   WeekendRoute: typeof WeekendRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RulesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sprint': {
+      id: '/sprint'
+      path: '/sprint'
+      fullPath: '/sprint'
+      preLoaderRoute: typeof SprintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/weekend': {
       id: '/weekend'
       path: '/weekend'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   PaddockRoute: PaddockRoute,
   PredictRoute: PredictRoute,
   RulesRoute: RulesRoute,
+  SprintRoute: SprintRoute,
   WeekendRoute: WeekendRoute,
 }
 export const routeTree = rootRouteImport

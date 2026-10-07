@@ -39,6 +39,14 @@ const bonusRows = [
   ["No predictions submitted", "−25"],
 ];
 
+const sprintRows = [
+  ["Exact position in the sprint top 8", "+1 each"],
+  ["Sprint pole position", "+1"],
+  ["Any other position", "0"],
+  ["Maximum per sprint", "9"],
+  ["No sprint picks submitted", "0 (no penalty)"],
+];
+
 function Rules() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -68,6 +76,26 @@ function Rules() {
           30 from a perfect top 10, 3 for pole, 3 for fastest lap, 1 for a DNF and 15 for a
           perfect weekend — 52 in total.
         </p>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-2xl">Sprint weekends</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          On sprint weekends a Sprint tab appears. You predict the first 8 sprint positions
+          (a position only scores when it is exactly right) plus the sprint pole. Sprint points are
+          added to that round's total.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <RuleTable title="Sprint points" rows={sprintRows} />
+          <div className="carbon-panel rounded-lg p-5">
+            <h2 className="text-lg">Sprint lock deadlines</h2>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>Sprint pole pick closes when sprint qualifying starts.</li>
+              <li>Sprint top 8 picks close when the sprint starts.</li>
+              <li>The sprint pole is a separate pick, saved on its own.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </main>
   );

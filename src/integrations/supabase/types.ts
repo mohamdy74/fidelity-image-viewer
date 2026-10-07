@@ -190,6 +190,9 @@ export type Database = {
           circuit: string | null
           country: string | null
           has_results: boolean
+          has_sprint: boolean
+          sprint_at: string | null
+          sprint_qualifying_at: string | null
           id: string
           locality: string | null
           name: string
@@ -202,6 +205,9 @@ export type Database = {
           circuit?: string | null
           country?: string | null
           has_results?: boolean
+          has_sprint?: boolean
+          sprint_at?: string | null
+          sprint_qualifying_at?: string | null
           id?: string
           locality?: string | null
           name: string
@@ -214,6 +220,9 @@ export type Database = {
           circuit?: string | null
           country?: string | null
           has_results?: boolean
+          has_sprint?: boolean
+          sprint_at?: string | null
+          sprint_qualifying_at?: string | null
           id?: string
           locality?: string | null
           name?: string
@@ -252,6 +261,82 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "scores_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprint_predictions: {
+        Row: {
+          created_at: string
+          id: string
+          pole_driver_id: string | null
+          race_id: string
+          top8: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pole_driver_id?: string | null
+          race_id: string
+          top8?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pole_driver_id?: string | null
+          race_id?: string
+          top8?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_predictions_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprint_results: {
+        Row: {
+          driver_id: string
+          finished: boolean
+          id: string
+          pole: boolean
+          position: number | null
+          race_id: string
+          status: string | null
+        }
+        Insert: {
+          driver_id: string
+          finished?: boolean
+          id?: string
+          pole?: boolean
+          position?: number | null
+          race_id: string
+          status?: string | null
+        }
+        Update: {
+          driver_id?: string
+          finished?: boolean
+          id?: string
+          pole?: boolean
+          position?: number | null
+          race_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_results_race_id_fkey"
             columns: ["race_id"]
             isOneToOne: false
             referencedRelation: "races"

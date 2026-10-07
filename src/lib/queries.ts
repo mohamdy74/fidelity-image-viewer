@@ -15,6 +15,9 @@ export type Race = {
   race_at: string;
   qualifying_at: string | null;
   has_results: boolean;
+  has_sprint: boolean;
+  sprint_qualifying_at: string | null;
+  sprint_at: string | null;
 };
 
 export type Driver = {

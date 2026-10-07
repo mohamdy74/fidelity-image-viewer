@@ -1,9 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, Grid3x3, Home, LogOut, Swords, Trophy } from "lucide-react";
+import { CalendarDays, Grid3x3, Home, LogOut, Swords, Trophy, Zap } from "lucide-react";
 
 import { LogoHorizontal, LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { racesQuery } from "@/lib/queries";
+import { sprintWeekend } from "@/lib/sprint";
 
 const links = [
   { to: "/", label: "Paddock", icon: Home },
@@ -14,11 +17,21 @@ const links = [
   { to: "/rules", label: "Rules", icon: null },
 ] as const;
 
+const DESKTOP_LINK =
+  "hidden rounded-sm px-2 py-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground md:inline [&.active]:text-primary";
+
+/** The Sprint tab exists only on sprint weekends. */
+function useSprintWeek(): boolean {
+  const { data: races } = useQuery(racesQuery);
+  return !!races && !!sprintWeekend(races);
+}
+
 /** Kept so any other file that still imports HelmetLogo keeps working. */
 export const HelmetLogo = LogoMark;
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
+  const sprintOn = useSprintWeek();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
@@ -28,16 +41,26 @@ export function SiteHeader() {
         </Link>
 
         <nav className="ml-auto flex items-center gap-1">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              activeOptions={{ exact: l.to === "/" }}
-              className="hidden rounded-sm px-2 py-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground md:inline [&.active]:text-primary"
-            >
-              {l.label}
+          {links
+            .filter((l) => l.to !== "/rules")
+            .map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                activeOptions={{ exact: l.to === "/" }}
+                className={DESKTOP_LINK}
+              >
+                {l.label}
+              </Link>
+            ))}
+          {sprintOn && (
+            <Link to="/sprint" className={DESKTOP_LINK}>
+              Sprint
             </Link>
-          ))}
+          )}
+          <Link to="/rules" className={DESKTOP_LINK}>
+            Rules
+          </Link>
           <Link
             to="/rules"
             className="rounded-sm px-2 py-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground md:hidden [&.active]:text-primary"
@@ -61,12 +84,17 @@ export function SiteHeader() {
 }
 
 export function BottomNav() {
+  const sprintOn = useSprintWeek();
+  const count = links.filter((l) => l.icon).length + (sprintOn ? 1 : 0);
   return (
     <>
       <div className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" />
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed inset-x-0 bottom-0 z-50 grid border-t border-border bg-background/95 backdrop-blur md:hidden"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+          gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`,
+        }}
         aria-label="Main"
       >
         {links
@@ -85,6 +113,15 @@ export function BottomNav() {
               </Link>
             );
           })}
+        {sprintOn && (
+          <Link
+            to="/sprint"
+            className="flex h-16 touch-manipulation select-none flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground active:bg-secondary/60 [&.active]:text-primary"
+          >
+            <Zap className="h-5 w-5" />
+            Sprint
+          </Link>
+        )}
       </nav>
     </>
   );

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import type { Json } from "@/integrations/supabase/types";
 import { NO_SUBMISSION_PENALTY, scorePrediction, type ResultRow } from "./scoring";
+import { scoreSprint, type SprintResultRow } from "./sprintScoring";
 
 const API = "https://api.jolpi.ca/ergast/f1";
 const SEASON = 2026;
@@ -21,6 +22,9 @@ type ErgastRace = {
     Location: { locality?: string; country?: string };
   };
   Qualifying?: ErgastSession;
+  Sprint?: ErgastSession;
+  SprintQualifying?: ErgastSession;
+  SprintShootout?: ErgastSession;
   Results?: Array<{
     position: string;
     grid: string;
@@ -80,6 +84,9 @@ export const syncF1Data = createServerFn({ method: "POST" })
           locality: r.Circuit.Location.locality ?? null,
           race_at: toIso({ date: r.date, time: r.time })!,
           qualifying_at: toIso(r.Qualifying),
+          has_sprint: !!r.Sprint,
+          sprint_at: toIso(r.Sprint),
+          sprint_qualifying_at: toIso(r.SprintQualifying ?? r.SprintShootout),
         })),
         { onConflict: "season,round" },
       );
@@ -171,6 +178,9 @@ export const syncF1Data = createServerFn({ method: "POST" })
       await supabaseAdmin.from("races").update({ has_results: true }).eq("id", raceId);
     }
 
+    // ---- Sprint results ----
+    await syncSprintResults(roundToId);
+
     // ---- Fast fallback: official source still empty after the race → use live timing ----
     await openF1Fallback(new Set(racesWithResults.map((r) => Number(r.round))));
 
@@ -213,6 +223,21 @@ async function scoreAllRaces() {
       .eq("race_id", race.id);
 
     const byUser = new Map((predictions ?? []).map((p) => [p.user_id, p]));
+
+    // Sprint points (top 8 + sprint pole, max 9) are added to the round once the sprint has results.
+    const { data: sprintResults } = await supabaseAdmin
+      .from("sprint_results")
+      .select("driver_id, position, finished, pole")
+      .eq("race_id", race.id);
+    const { data: sprintPreds } = await supabaseAdmin
+      .from("sprint_predictions")
+      .select("user_id, top8, pole_driver_id")
+      .eq("race_id", race.id);
+    const sprintByUser = new Map((sprintPreds ?? []).map((p) => [p.user_id, p]));
+    const sprintFor = (userId: string) =>
+      sprintResults?.length
+        ? scoreSprint(sprintByUser.get(userId) ?? null, sprintResults as SprintResultRow[])
+        : null;
     const rows: Array<{
       user_id: string;
       race_id: string;
@@ -225,13 +250,18 @@ async function scoreAllRaces() {
       // Players who joined after the race started are not penalised.
       if (new Date(profile.created_at) > new Date(race.race_at)) continue;
 
+      const sprint = sprintFor(profile.id);
       const prediction = byUser.get(profile.id);
       if (!prediction) {
         rows.push({
           user_id: profile.id,
           race_id: race.id,
-          points: NO_SUBMISSION_PENALTY,
-          breakdown: { noSubmission: true, total: NO_SUBMISSION_PENALTY },
+          points: NO_SUBMISSION_PENALTY + (sprint?.total ?? 0),
+          breakdown: {
+            noSubmission: true,
+            ...(sprint ? { sprint } : {}),
+            total: NO_SUBMISSION_PENALTY + (sprint?.total ?? 0),
+          },
           updated_at: new Date().toISOString(),
         });
         continue;
@@ -250,14 +280,15 @@ async function scoreAllRaces() {
       // A pole-only save (top 10 never completed) still counts as a missed race
       // submission — the pole points are kept on top of the penalty.
       const poleOnly = (prediction.top10 ?? []).length < 10;
-      const total = poleOnly ? NO_SUBMISSION_PENALTY + breakdown.pole : breakdown.total;
+      const raceTotal = poleOnly ? NO_SUBMISSION_PENALTY + breakdown.pole : breakdown.total;
+      const total = raceTotal + (sprint?.total ?? 0);
       rows.push({
         user_id: profile.id,
         race_id: race.id,
         points: total,
         breakdown: poleOnly
-          ? { noSubmission: true, poleOnly: true, pole: breakdown.pole, total }
-          : { ...breakdown },
+          ? { noSubmission: true, poleOnly: true, pole: breakdown.pole, ...(sprint ? { sprint } : {}), total }
+          : { ...breakdown, ...(sprint ? { sprint } : {}), total },
         updated_at: new Date().toISOString(),
       });
     }
@@ -362,5 +393,56 @@ async function openF1Fallback(officialRounds: Set<number>) {
 
     await supabaseAdmin.from("race_results").upsert(rows, { onConflict: "race_id,driver_id" });
     await supabaseAdmin.from("races").update({ has_results: true }).eq("id", race.id);
+  }
+}
+
+type ErgastSprintRace = {
+  round: string;
+  SprintResults?: Array<{
+    position: string;
+    grid: string;
+    status: string;
+    Driver: { driverId: string };
+  }>;
+};
+
+/** Official sprint results. A grid of 1 means the driver took sprint pole. */
+async function syncSprintResults(roundToId: Map<number, string>) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const byRound = new Map<string, ErgastSprintRace>();
+  const pageSize = 100;
+  let offset = 0;
+  let total = Infinity;
+  while (offset < total && offset < 1000) {
+    const page = await getJson<{
+      MRData: { total: string; RaceTable: { Races: ErgastSprintRace[] } };
+    }>(`${API}/${SEASON}/sprint/?format=json&limit=${pageSize}&offset=${offset}`);
+    if (!page) break;
+    total = Number(page.MRData.total);
+    for (const race of page.MRData.RaceTable.Races) {
+      const existing = byRound.get(race.round);
+      if (existing) existing.SprintResults = [...(existing.SprintResults ?? []), ...(race.SprintResults ?? [])];
+      else byRound.set(race.round, race);
+    }
+    offset += pageSize;
+  }
+
+  for (const race of byRound.values()) {
+    const raceId = roundToId.get(Number(race.round));
+    if (!raceId || !race.SprintResults?.length) continue;
+    const rows = race.SprintResults.map((res) => {
+      const status = res.status ?? "";
+      const finished = /finished|lapped|\+\d+ lap/i.test(status);
+      return {
+        race_id: raceId,
+        driver_id: res.Driver.driverId,
+        position: finished ? Number(res.position) : null,
+        status,
+        finished,
+        pole: res.grid === "1",
+      };
+    });
+    await supabaseAdmin.from("sprint_results").upsert(rows, { onConflict: "race_id,driver_id" });
   }
 }
