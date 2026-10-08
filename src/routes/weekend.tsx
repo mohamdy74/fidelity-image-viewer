@@ -84,6 +84,7 @@ function currentWeekend(races: Race[], now: number): Race | null {
 
 function localTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
+    timeZone: "Africa/Cairo",
     weekday: "short",
     day: "numeric",
     month: "short",
