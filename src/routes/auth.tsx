@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -20,10 +20,7 @@ export const Route = createFileRoute("/auth")({
         content: "Sign in with Google to join the DOWNFORCE prediction league.",
       },
       { name: "twitter:title", content: "Join the league — DOWNFORCE" },
-      {
-        name: "twitter:description",
-        content: "Sign in with Google to join the DOWNFORCE prediction league.",
-      },
+      { name: "twitter:description", content: "Sign in with Google to join the DOWNFORCE prediction league." },
     ],
   }),
   component: AuthPage,
@@ -40,32 +37,27 @@ function AuthPage() {
 
   async function signIn() {
     setBusy(true);
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-
-    if (error) {
+    if (result.error) {
       setBusy(false);
       toast.error("Sign in failed. Please try again.");
+      return;
     }
+    if (result.redirected) return;
+    navigate({ to: "/predict" });
   }
 
   return (
     <main className="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center">
       <h1 className="text-3xl">Enter the league</h1>
-
       <p className="mt-3 text-sm text-muted-foreground">
         Sign in to lock in your predictions and appear on the league table.
       </p>
-
       <Button size="lg" className="mt-8 w-full" disabled={busy} onClick={signIn}>
         {busy ? "Opening Google…" : "Continue with Google"}
       </Button>
-
       <p className="mt-6 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
         Registered players who submit nothing score −25
       </p>
