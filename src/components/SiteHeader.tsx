@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, Grid3x3, Home, LogOut, Swords, Trophy, Zap } from "lucide-react";
+import { CalendarDays, Grid3x3, Home, LogOut, Moon, Sun, Swords, Trophy, Zap } from "lucide-react";
 
 import { LogoHorizontal, LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { racesQuery } from "@/lib/queries";
 import { sprintWeekend } from "@/lib/sprint";
 
@@ -31,7 +32,12 @@ export const HelmetLogo = LogoMark;
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const sprintOn = useSprintWeek();
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
@@ -67,6 +73,15 @@ export function SiteHeader() {
           >
             Rules
           </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+            className="shrink-0"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           {user ? (
             <Button variant="ghost" size="icon" aria-label="Sign out" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />

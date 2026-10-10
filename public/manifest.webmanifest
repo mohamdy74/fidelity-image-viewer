@@ -2,6 +2,7 @@
   "name": "DOWNFORCE — Fantasy Racing League",
   "short_name": "DOWNFORCE",
   "description": "Predict the top 10, pole, fastest lap and DNF before every Grand Prix.",
+  "id": "/",
   "start_url": "/predict",
   "scope": "/",
   "display": "standalone",

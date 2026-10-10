@@ -164,7 +164,7 @@ function Paddock() {
                   <span className="font-display text-2xl font-black text-gold">{pts} pts</span>
                 )}
               </div>
-              <ol className="mt-2 grid grid-cols-2 gap-1">
+              <ol className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                 {p.top10.map((id, i) => {
                   const d = byId.get(id);
                   const actual = finish.get(id);

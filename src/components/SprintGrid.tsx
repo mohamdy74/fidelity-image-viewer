@@ -1,13 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DriverPicker } from "@/components/DriverPicker";
 import type { Driver } from "@/lib/queries";
 import { sortByTeam, teamColor, teamLabel, teamsOf } from "@/lib/teams";
 import { cn } from "@/lib/utils";
@@ -38,51 +32,8 @@ export function Field({
   );
 }
 
-export function DriverSelect({
-  drivers,
-  value,
-  onChange,
-  disabled,
-  exclude,
-}: {
-  drivers: Driver[];
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-  exclude?: string[];
-}) {
-  return (
-    <Select value={value} onValueChange={onChange} disabled={!!disabled}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select driver" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={EMPTY}>— No pick —</SelectItem>
-        {sortByTeam(drivers).map((d) => {
-          const taken = !!exclude?.includes(d.id) && d.id !== value;
-          return (
-            <SelectItem key={d.id} value={d.id} disabled={taken}>
-              <span className="flex items-center gap-2">
-                <span
-                  className="w-6 shrink-0 border-l-2 pl-1 font-mono text-[11px] font-bold tabular-nums"
-                  style={{ borderColor: teamColor(d.team) }}
-                >
-                  {d.number ?? "–"}
-                </span>
-                <span className="font-semibold">{d.code ?? d.full_name}</span>
-                <span className="text-muted-foreground">
-                  {d.full_name}
-                  {d.team ? ` · ${d.team}` : ""}
-                  {taken ? " — already picked" : ""}
-                </span>
-              </span>
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
-  );
-}
+// Re-export DriverPicker as DriverSelect for backward compat with sprint.tsx
+export const DriverSelect = DriverPicker;
 
 export function SprintGrid({
   drivers,

@@ -4,17 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Countdown } from "@/components/Countdown";
+import { DriverPicker, EMPTY } from "@/components/DriverPicker";
 import { LightsOut } from "@/components/LightsOut";
 import { SharePicks } from "@/components/SharePicks";
 import { SharePole } from "@/components/SharePole";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, nextRace, racesQuery, type Driver } from "@/lib/queries";
@@ -41,8 +35,6 @@ export const Route = createFileRoute("/predict")({
   }),
   component: Predict,
 });
-
-const EMPTY = "__none__";
 
 // The database only keeps one "updated_at" per prediction, which moves whenever the top 10
 // changes. So we also remember (on this device) the moment the pole pick itself was saved.
@@ -139,7 +131,15 @@ function Predict() {
   const viewOnly = raceLocked || (hasSaved && !editing);
 
   if (loading) {
-    return <Shell>Loading…</Shell>;
+    return (
+      <Shell>
+        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        <div className="mt-3 h-8 w-64 animate-pulse rounded bg-muted" />
+        <div className="mt-4 h-12 w-full animate-pulse rounded-md bg-muted/60" />
+        <div className="mt-6 h-40 w-full animate-pulse rounded-lg bg-muted/60" />
+        <div className="mt-4 h-40 w-full animate-pulse rounded-lg bg-muted/60" />
+      </Shell>
+    );
   }
 
   if (!user) {
@@ -323,7 +323,7 @@ function Predict() {
         </div>
 
         <div className="mt-4">
-          <DriverSelect
+          <DriverPicker
             drivers={drivers ?? []}
             value={pole}
             disabled={poleLocked}
@@ -378,7 +378,7 @@ function Predict() {
         <h2 className="text-xl">Bonus picks</h2>
         <div className="mt-4 space-y-4">
           <Field label="Fastest lap (+3)" purple>
-            <DriverSelect
+            <DriverPicker
               drivers={drivers ?? []}
               value={fastestLap}
               disabled={viewOnly}
@@ -386,7 +386,7 @@ function Predict() {
             />
           </Field>
           <Field label="Driver to DNF (+1) — Aston Martin & Cadillac excluded">
-            <DriverSelect
+            <DriverPicker
               drivers={(drivers ?? []).filter((d) => !/aston|cadillac/i.test(d.team ?? ""))}
               value={dnf}
               disabled={viewOnly}
@@ -475,52 +475,6 @@ function Field({
       </p>
       {children}
     </div>
-  );
-}
-
-function DriverSelect({
-  drivers,
-  value,
-  onChange,
-  disabled,
-  exclude,
-}: {
-  drivers: Driver[];
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-  exclude?: string[];
-}) {
-  return (
-    <Select value={value} onValueChange={onChange} disabled={!!disabled}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select driver" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={EMPTY}>— No pick —</SelectItem>
-        {sortByTeam(drivers).map((d) => {
-          const taken = !!exclude?.includes(d.id) && d.id !== value;
-          return (
-            <SelectItem key={d.id} value={d.id} disabled={taken}>
-              <span className="flex items-center gap-2">
-                <span
-                  className="w-6 shrink-0 border-l-2 pl-1 font-mono text-[11px] font-bold tabular-nums"
-                  style={{ borderColor: teamColor(d.team) }}
-                >
-                  {d.number ?? "–"}
-                </span>
-                <span className="font-semibold">{d.code ?? d.full_name}</span>
-                <span className="text-muted-foreground">
-                  {d.full_name}
-                  {d.team ? ` · ${d.team}` : ""}
-                  {taken ? " — already picked" : ""}
-                </span>
-              </span>
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
   );
 }
 
