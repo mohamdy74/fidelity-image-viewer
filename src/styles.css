@@ -10,70 +10,70 @@
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/archivo-roman-var.woff2") format("woff2");
+  src: url("./assets/fonts/archivo-roman-var.woff2") format("woff2");
 }
 @font-face {
   font-family: "Archivo";
   font-style: italic;
   font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/archivo-italic-var.woff2") format("woff2");
+  src: url("./assets/fonts/archivo-italic-var.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/barlow-400.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-400.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/barlow-600.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-600.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/barlow-700.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-700.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow";
   font-style: italic;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/barlow-700-italic.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-700-italic.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow Semi Condensed";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/barlow-semicondensed-500.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-semicondensed-600.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow Semi Condensed";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/barlow-semicondensed-600.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-semicondensed-600.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow Semi Condensed";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/barlow-semicondensed-700.woff2") format("woff2");
+  src: url("./assets/fonts/barlow-semicondensed-700.woff2") format("woff2");
 }
 @font-face {
   font-family: "Cairo";
   font-style: normal;
   font-weight: 200 1000;
   font-display: swap;
-  src: url("/fonts/cairo-badge-var.woff2") format("woff2");
+  src: url("./assets/fonts/cairo-badge-var.woff2") format("woff2");
 }
 @font-face {
   font-family: "Archivo Fallback";
