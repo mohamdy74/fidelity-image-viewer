@@ -184,11 +184,9 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.CookieManager;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -198,39 +196,20 @@ public class MainActivity extends BridgeActivity {
             WebView webView = getBridge().getWebView();
             webView.setBackgroundColor(Color.parseColor("#07080C"));
 
+            // Enable 1st and 3rd party cookies + DOM storage so Google OAuth & SetSID stay in-app
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.setAcceptCookie(true);
             cookieManager.setAcceptThirdPartyCookies(webView, true);
 
+            // Clean only '; wv' from the real device User-Agent so Sec-CH-UA headers match 100%
             WebSettings settings = webView.getSettings();
             settings.setDomStorageEnabled(true);
-            settings.setJavaScriptEnabled(true);
-            settings.setSupportMultipleWindows(false);
-
-            webView.setWebViewClient(new BridgeWebViewClient(getBridge()) {
-                @Override
-                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                    Uri uri = request.getUrl();
-                    if (uri == null) return false;
-                    String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
-                    String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
-
-                    if (host.equals("wa.me") || host.endsWith("whatsapp.com") || host.equals("calendar.google.com")) {
-                        try {
-                            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                            return true;
-                        } catch (Exception ignored) {
-                            return false;
-                        }
-                    }
-
-                    if (scheme.equals("http") || scheme.equals("https")) {
-                        return false;
-                    }
-
-                    return super.shouldOverrideUrlLoading(view, request);
-                }
-            });
+            settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            String ua = settings.getUserAgentString();
+            if (ua != null) {
+                String cleanUa = ua.replace("; wv", "").replace("Version/4.0 ", "");
+                settings.setUserAgentString(cleanUa);
+            }
         }
         handleShortcutIntent(getIntent());
     }
@@ -256,4 +235,4 @@ public class MainActivity extends BridgeActivity {
 """,
     encoding="utf-8",
 )
-print("Android project customized successfully.")
+print("Android project customized with Google OAuth in-app fix.")

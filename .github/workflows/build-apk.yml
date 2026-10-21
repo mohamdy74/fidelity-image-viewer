@@ -86,21 +86,24 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE.apk"
-          ls -lh "$GITHUB_WORKSPACE/DOWNFORCE.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE-v3.apk"
+          ls -lh "$GITHUB_WORKSPACE/DOWNFORCE.apk" "$GITHUB_WORKSPACE/DOWNFORCE-v3.apk"
 
       - name: Upload DOWNFORCE.apk to GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: DOWNFORCE-Android-APK
-          path: DOWNFORCE.apk
+          path: |
+            DOWNFORCE.apk
+            DOWNFORCE-v3.apk
           retention-days: 90
 
-      - name: Publish DOWNFORCE.apk to Live GitHub Release
+      - name: Publish Fresh GitHub Release (Updates Release Timestamp!)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload latest DOWNFORCE.apk --clobber || \
-          gh release create latest DOWNFORCE.apk \
-            --title "DOWNFORCE Official Android App (2026 Season)" \
-            --notes "🏎️ **DOWNFORCE Official Android App (.APK)** — Includes F1 Telemetry Haptics, Offline Race Alarms, Native Card Sharing, App Icon Shortcuts, and Zero-Flicker Carbon Launch." \
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest DOWNFORCE-v3.apk DOWNFORCE.apk \
+            --title "DOWNFORCE Android App v3 (Google Login Fixed)" \
+            --notes "🏎️ **DOWNFORCE Official Android App v3 (.APK)** — Fixed in-app Google 2-Step Verification redirect (`accounts.youtube.com` & `*.lovable.dev` stay inside the app), plus F1 Telemetry Haptics, Offline Race Alarms, and Native Card Sharing." \
             --latest
