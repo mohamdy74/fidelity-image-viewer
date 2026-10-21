@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, racesQuery } from "@/lib/queries";
-import { sprintPoleLockAt, sprintWeekend } from "@/lib/sprint";
-import { assertDeadlineOpen } from "@/lib/prediction.functions";
+import { sprintPoleLockAt, sprintWeekend } from "@/lib/sprint"; import { assertDeadlineOpen } from "@/lib/reminders.functions";
 import {
   SPRINT_MAX_POINTS,
   SPRINT_SLOTS,
