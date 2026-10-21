@@ -1,59 +1,44 @@
-self.addEventListener("install", () => {
-  self.skipWaiting();
+﻿const CACHE_NAME = "downforce-v2-cache";
+const STATIC_ASSETS = ["/", "/offline.html", "/favicon.svg", "/favicon.png", "/manifest.webmanifest"];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener("activate", (e) => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))).then(() => self.clients.claim()));
 });
 
-self.addEventListener("push", (event) => {
-  let data = {
-    title: "DOWNFORCE — Race Control",
-    body: "Lock in your predictions before the deadline!",
-    tag: "downforce-alert",
-    url: "/predict",
-  };
+self.addEventListener("fetch", (e) => {
+  const req = e.request;
+  const url = new URL(req.url);
+  if (req.method !== "GET" || url.pathname.startsWith("/api/") || url.hostname.includes("supabase.co") || url.hostname.includes("google.com")) return;
 
-  if (event.data) {
-    try {
-      const parsed = event.data.json();
-      data = { ...data, ...parsed };
-    } catch {
-      try {
-        data.body = event.data.text() || data.body;
-      } catch {}
-    }
+  if (url.pathname.startsWith("/assets/") || url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".woff2") || url.pathname.endsWith(".png") || url.pathname.endsWith(".svg")) {
+    e.respondWith(
+      caches.match(req).then(cached => {
+        if (cached) {
+          fetch(req).then(res => { if (res && res.status === 200) caches.open(CACHE_NAME).then(c => c.put(req, res)); }).catch(() => {});
+          return cached;
+        }
+        return fetch(req).then(res => {
+          if (res && res.status === 200) { const cl = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, cl)); }
+          return res;
+        });
+      })
+    );
+    return;
   }
 
-  const options = {
-    body: data.body,
-    icon: "/favicon.png",
-    badge: "/favicon.png",
-    tag: data.tag || "downforce-alert",
-    renotify: true,
-    requireInteraction: false,
-    vibrate: [200, 100, 200],
-    data: { url: data.url || "/predict" },
-  };
-
-  event.waitUntil(self.registration.showNotification(data.title, options));
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/predict";
-
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          client.navigate(targetUrl).catch(() => {});
-          return client.focus();
-        }
-      }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
-      }
-    }),
-  );
+  if (req.mode === "navigate") {
+    e.respondWith(
+      caches.match("/").then(cached => {
+        const net = fetch(req).then(res => {
+          if (res && res.status === 200) { const cl = res.clone(); caches.open(CACHE_NAME).then(c => c.put("/", cl)); }
+          return res;
+        }).catch(() => cached || caches.match("/offline.html"));
+        return cached || net;
+      })
+    );
+  }
 });
