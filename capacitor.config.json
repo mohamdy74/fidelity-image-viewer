@@ -9,11 +9,10 @@
     "cleartext": false,
     "errorPath": "offline.html",
     "allowNavigation": [
-      "downforce.lovable.app",
-      "*.lovable.app",
-      "*.supabase.co",
-      "accounts.google.com",
-      "*.googleusercontent.com"
+      "*",
+      "*.*",
+      "*.*.*",
+      "*.*.*.*"
     ]
   },
   "plugins": {
