@@ -1,0 +1,106 @@
+name: Build DOWNFORCE Android App (APK)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "capacitor.config.json"
+      - "public/offline.html"
+      - ".github/scripts/customize_android.py"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Compile & Sign DOWNFORCE.apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Initialize Capacitor Android Native Shell
+        run: |
+          mkdir -p /tmp/downforce-cap/public
+          cp capacitor.config.json /tmp/downforce-cap/capacitor.config.json
+          cp public/offline.html /tmp/downforce-cap/public/offline.html
+          printf '<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=https://downforce.lovable.app"></head><body style="background:#07080C;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">Launching DOWNFORCE...</body></html>' > /tmp/downforce-cap/public/index.html
+          cd /tmp/downforce-cap
+          npm init -y
+          npm install \
+            @capacitor/core@^6.2.0 \
+            @capacitor/cli@^6.2.0 \
+            @capacitor/android@^6.2.0 \
+            @capacitor/app@^6.0.2 \
+            @capacitor/haptics@^6.0.2 \
+            @capacitor/local-notifications@^6.1.2 \
+            @capacitor/share@^6.0.2 \
+            @capacitor/filesystem@^6.0.2 \
+            @capacitor/splash-screen@^6.0.2 \
+            @capacitor/status-bar@^6.0.2
+          npx cap add android
+          npx cap sync android
+
+      - name: Generate F1 Carbon/Crimson Icons, Splash Screen, App Shortcuts & Native Polish
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 "$GITHUB_WORKSPACE/.github/scripts/customize_android.py" /tmp/downforce-cap/android/app/src/main
+
+      - name: Sign & Compile Release APK
+        run: |
+          echo "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" | base64 -d > /tmp/downforce-cap/android/app/downforce-release.keystore
+          cat << 'GRADLEEOF' >> /tmp/downforce-cap/android/app/build.gradle
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("downforce-release.keystore")
+                      storePassword "downforce2026"
+                      keyAlias "downforce"
+                      keyPassword "downforce2026"
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                  }
+              }
+          }
+          GRADLEEOF
+          cd /tmp/downforce-cap/android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE.apk"
+          ls -lh "$GITHUB_WORKSPACE/DOWNFORCE.apk"
+
+      - name: Upload DOWNFORCE.apk to GitHub Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DOWNFORCE-Android-APK
+          path: DOWNFORCE.apk
+          retention-days: 90
+
+      - name: Publish DOWNFORCE.apk to Live GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload latest DOWNFORCE.apk --clobber || \
+          gh release create latest DOWNFORCE.apk \
+            --title "DOWNFORCE Official Android App (2026 Season)" \
+            --notes "🏎️ **DOWNFORCE Official Android App (.APK)** — Includes F1 Telemetry Haptics, Offline Race Alarms, Native Card Sharing, App Icon Shortcuts, and Zero-Flicker Carbon Launch." \
+            --latest

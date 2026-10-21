@@ -1,3 +1,4 @@
+import { initNativeShell } from "@/lib/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -152,7 +153,7 @@ function RootComponent() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      initNativeShell().catch(() => {}); navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);
 

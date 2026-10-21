@@ -1,0 +1,41 @@
+{
+  "appId": "app.lovable.downforce",
+  "appName": "DOWNFORCE",
+  "webDir": "public",
+  "backgroundColor": "#07080C",
+  "overrideUserAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+  "server": {
+    "url": "https://downforce.lovable.app",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "downforce.lovable.app",
+      "*.lovable.app",
+      "*.supabase.co",
+      "accounts.google.com",
+      "*.googleusercontent.com"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 260,
+      "backgroundColor": "#07080C",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#07080C",
+      "overlaysWebView": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_launcher",
+      "iconColor": "#E10600"
+    }
+  }
+}
