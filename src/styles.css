@@ -850,3 +850,74 @@ select option {
   background-color: #ffffff;
   color: #0f172a;
 }
+
+
+
+/* === DOWNFORCE F1 GLASS COCKPIT TOKENS === */
+.glass-cockpit-shell {
+  background:
+    radial-gradient(120% 55% at 85% 6%, rgba(225, 6, 0, 0.30) 0%, rgba(145, 8, 5, 0.12) 42%, transparent 72%),
+    radial-gradient(90% 45% at 12% 24%, rgba(255, 210, 48, 0.10) 0%, transparent 65%),
+    radial-gradient(85% 40% at 50% 60%, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+}
+
+.glass-hero-card {
+  background: linear-gradient(145deg, rgba(38, 43, 56, 0.64) 0%, rgba(20, 23, 31, 0.80) 55%, rgba(14, 16, 22, 0.90) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.75),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px 0 rgba(225, 6, 0, 0.14);
+}
+
+.glass-squircle {
+  background: linear-gradient(160deg, rgba(44, 48, 62, 0.68) 0%, rgba(22, 25, 34, 0.85) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    0 10px 24px -6px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.18);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-squircle:active {
+  transform: translateY(-2px) scale(0.96);
+  border-color: rgba(225, 6, 0, 0.55);
+}
+
+.glass-pill {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+
+.glass-nested-cta {
+  background: linear-gradient(90deg, rgba(190, 12, 8, 0.72) 0%, rgba(88, 14, 18, 0.62) 48%, rgba(28, 31, 42, 0.88) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-bottom-dock {
+  background: linear-gradient(180deg, rgba(30, 34, 45, 0.86) 0%, rgba(12, 14, 21, 0.95) 100%);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.88),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.dock-center-orb {
+  background: radial-gradient(circle at 30% 25%, #FF3B30 0%, #E10600 55%, #8A0300 100%);
+  box-shadow:
+    0 0 24px rgba(225, 6, 0, 0.65),
+    inset 0 2px 3px rgba(255, 255, 255, 0.45);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

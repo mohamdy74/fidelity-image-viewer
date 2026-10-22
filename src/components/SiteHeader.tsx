@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, Grid3x3, Home, LogOut, Moon, Shield, Sun, Swords, Trophy, Zap } from "lucide-react";
+import { CalendarDays, Flame, Grid3x3, Home, LogOut, Moon, Shield, Sun, Swords, Trophy, Zap } from "lucide-react";
 
 import { AccountAndOnboarding } from "@/components/AccountAndOnboarding";
 import { LogoHorizontal, LogoMark } from "@/components/Logo";
@@ -42,10 +42,15 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full overflow-x-clip border-b border-border bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+    <header className="sticky top-0 z-40 w-full overflow-x-clip border-b border-white/10 bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-1.5 px-3 py-2 sm:gap-2 sm:px-4">
-        <Link to="/" className="flex min-w-0 shrink items-center" aria-label="DOWNFORCE home">
-          <LogoHorizontal className="h-7 w-auto max-w-[140px] sm:h-10 sm:max-w-none" />
+        <Link to="/" className="flex min-w-0 shrink items-center gap-2" aria-label="DOWNFORCE home">
+          <img
+            src="/app-icon.webp"
+            alt="Downforce"
+            className="h-7 w-7 rounded-lg border border-white/15 object-cover shadow-sm md:hidden"
+          />
+          <LogoHorizontal className="h-6 w-auto max-w-[130px] sm:h-9 sm:max-w-none" />
         </Link>
 
         <nav className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -61,11 +66,9 @@ export function SiteHeader() {
                 {l.label}
               </Link>
             ))}
-          {sprintOn && (
-            <Link to="/sprint" className={DESKTOP_LINK}>
-              Sprint
-            </Link>
-          )}
+          <Link to="/sprint" className={DESKTOP_LINK}>
+            Sprint {sprintOn ? "⚡" : ""}
+          </Link>
           {isSteward && (
             <Link to="/stewards" className={DESKTOP_LINK} style={{ color: "var(--gold)" }}>
               Stewards
@@ -89,7 +92,7 @@ export function SiteHeader() {
           )}
           <Link
             to="/rules"
-            className="rounded-sm px-1.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:hidden [&.active]:text-primary"
+            className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground md:hidden [&.active]:border-primary/50 [&.active]:text-primary"
           >
             Rules
           </Link>
@@ -129,45 +132,64 @@ export function SiteHeader() {
 }
 
 export function BottomNav() {
-  const sprintOn = useSprintWeek();
-  const count = links.filter((l) => l.icon).length + (sprintOn ? 1 : 0);
   return (
     <>
-      <div className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" />
-      <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid border-t border-border bg-background/95 backdrop-blur md:hidden"
-        style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`,
-        }}
-        aria-label="Main"
+      <div className="h-[calc(5.25rem+env(safe-area-inset-bottom))] md:hidden" />
+      <div
+        className="fixed inset-x-3 bottom-3 z-50 md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {links
-          .filter((l) => l.icon)
-          .map((l) => {
-            const Icon = l.icon!;
-            return (
-              <Link
-                key={l.to}
-                to={l.to}
-                activeOptions={{ exact: l.to === "/" }}
-                className="flex h-16 touch-manipulation select-none flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground active:bg-secondary/60 [&.active]:text-primary"
-              >
-                <Icon className="h-5 w-5" />
-                {l.label}
-              </Link>
-            );
-          })}
-        {sprintOn && (
+        <nav
+          className="glass-bottom-dock mx-auto flex max-w-md items-center justify-between rounded-[28px] px-3 py-1.5"
+          aria-label="Main"
+        >
           <Link
-            to="/sprint"
-            className="flex h-16 touch-manipulation select-none flex-col items-center justify-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground active:bg-secondary/60 [&.active]:text-primary"
+            to="/"
+            activeOptions={{ exact: true }}
+            className="flex w-14 touch-manipulation select-none flex-col items-center justify-center py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white/60 transition [&.active]:text-primary"
           >
-            <Zap className="h-5 w-5" />
-            Sprint
+            <Home className="h-5 w-5" />
+            <span className="mt-0.5">Paddock</span>
           </Link>
-        )}
-      </nav>
+
+          <Link
+            to="/leaderboard"
+            className="flex w-14 touch-manipulation select-none flex-col items-center justify-center py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white/60 transition [&.active]:text-gold"
+          >
+            <Trophy className="h-5 w-5" />
+            <span className="mt-0.5">Standings</span>
+          </Link>
+
+          <div className="relative -top-4 flex flex-col items-center">
+            <Link
+              to="/predict"
+              aria-label="Predict"
+              className="dock-center-orb flex h-13 w-13 items-center justify-center rounded-full border-4 border-[#07080C] text-white transition active:scale-95"
+            >
+              <Flame className="h-6 w-6" />
+            </Link>
+            <span className="mt-0.5 font-mono text-[10px] font-extrabold uppercase tracking-wider text-white">
+              Predict
+            </span>
+          </div>
+
+          <Link
+            to="/h2h"
+            className="flex w-14 touch-manipulation select-none flex-col items-center justify-center py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white/60 transition [&.active]:text-primary"
+          >
+            <Swords className="h-5 w-5" />
+            <span className="mt-0.5">1v1</span>
+          </Link>
+
+          <Link
+            to="/weekend"
+            className="flex w-14 touch-manipulation select-none flex-col items-center justify-center py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white/60 transition [&.active]:text-primary"
+          >
+            <CalendarDays className="h-5 w-5" />
+            <span className="mt-0.5">Weekend</span>
+          </Link>
+        </nav>
+      </div>
     </>
   );
 }

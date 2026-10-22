@@ -8,6 +8,9 @@ on:
     paths:
       - "capacitor.config.json"
       - "public/offline.html"
+      - "public/app-icon.webp"
+      - "public/aero-d-fg.webp"
+      - "public/mono-splash.webp"
       - ".github/scripts/customize_android.py"
       - ".github/workflows/build-apk.yml"
 
@@ -16,7 +19,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Compile & Sign DOWNFORCE.apk
+    name: Compile & Sign DOWNFORCE-v4.apk
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -85,25 +88,22 @@ jobs:
           cd /tmp/downforce-cap/android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE.apk"
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE-v3.apk"
-          ls -lh "$GITHUB_WORKSPACE/DOWNFORCE.apk" "$GITHUB_WORKSPACE/DOWNFORCE-v3.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/DOWNFORCE-v4.apk"
+          ls -lh "$GITHUB_WORKSPACE/DOWNFORCE-v4.apk"
 
-      - name: Upload DOWNFORCE.apk to GitHub Actions Artifacts
+      - name: Upload DOWNFORCE-v4.apk to GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: DOWNFORCE-Android-APK
-          path: |
-            DOWNFORCE.apk
-            DOWNFORCE-v3.apk
+          path: DOWNFORCE-v4.apk
           retention-days: 90
 
-      - name: Publish Fresh GitHub Release (Updates Release Timestamp!)
+      - name: Publish DOWNFORCE-v4.apk to Live GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest DOWNFORCE-v3.apk DOWNFORCE.apk \
-            --title "DOWNFORCE Android App v3 (Google Login Fixed)" \
-            --notes "🏎️ **DOWNFORCE Official Android App v3 (.APK)** — Fixed in-app Google 2-Step Verification redirect (`accounts.youtube.com` & `*.lovable.dev` stay inside the app), plus F1 Telemetry Haptics, Offline Race Alarms, and Native Card Sharing." \
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest DOWNFORCE-v4.apk \
+            --title "DOWNFORCE Official Android App (2026 Season)" \
+            --notes "🏎️ **DOWNFORCE Official Android App (.APK)** — Includes F1 Telemetry Haptics, Offline Race Alarms, Native Card Sharing, App Icon Shortcuts, and Zero-Flicker Carbon Launch." \
             --latest

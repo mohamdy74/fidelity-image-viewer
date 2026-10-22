@@ -5,57 +5,40 @@ from PIL import Image, ImageDraw
 
 ANDROID_MAIN = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/downforce-cap/android/app/src/main")
 RES = ANDROID_MAIN / "res"
+WORKSPACE = Path(__file__).resolve().parents[2]
+
+icon_src_path = WORKSPACE / "public/app-icon.webp"
+fg_src_path = WORKSPACE / "public/aero-d-fg.webp"
+mono_src_path = WORKSPACE / "public/mono-splash.webp"
+
+icon_master = Image.open(icon_src_path).convert("RGBA")
+fg_master = Image.open(fg_src_path).convert("RGBA")
+mono_master = Image.open(mono_src_path).convert("RGBA")
 
 def make_icon(size: int, round_mask: bool = False, foreground_only: bool = False) -> Image.Image:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0) if foreground_only else (7, 8, 12, 255))
-    draw = ImageDraw.Draw(img)
+    if foreground_only:
+        # Android Adaptive Icon foreground is 108dp with a 66dp safe zone
+        out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        inner = int(size * 0.68)
+        fg_resized = fg_master.resize((inner, inner), Image.Resampling.LANCZOS)
+        out.alpha_composite(fg_resized, ((size - inner) // 2, (size - inner) // 2))
+        return out
 
-    if not foreground_only:
-        step = max(6, size // 18)
-        for i in range(-size, size * 2, step):
-            draw.line([(i, 0), (i - size, size)], fill=(255, 255, 255, 10), width=max(1, size // 96))
-
-    pad = int(size * (0.22 if foreground_only else 0.14))
-    box = [pad, pad, size - pad, size - pad]
-    radius = int((size - 2 * pad) * 0.24)
-    draw.rounded_rectangle(
-        box,
-        radius=radius,
-        fill=(225, 6, 0, 255),
-        outline=(255, 210, 48, 220),
-        width=max(2, size // 42),
-    )
-
-    cx, cy = size // 2, size // 2
-    r_outer = int((size - 2 * pad) * 0.30)
-    r_inner = int(r_outer * 0.52)
-    draw.pieslice([cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer], -90, 90, fill=(255, 255, 255, 255))
-    draw.rectangle([cx - int(r_outer * 0.65), cy - r_outer, cx, cy + r_outer], fill=(255, 255, 255, 255))
-    draw.pieslice([cx - r_inner, cy - r_inner, cx + r_inner, cy + r_inner], -90, 90, fill=(225, 6, 0, 255))
-    draw.rectangle([cx - int(r_inner * 0.35), cy - r_inner, cx, cy + r_inner], fill=(225, 6, 0, 255))
-
+    img = icon_master.resize((size, size), Image.Resampling.LANCZOS)
     if round_mask:
         mask = Image.new("L", (size, size), 0)
-        mdraw = ImageDraw.Draw(mask)
-        mdraw.ellipse([0, 0, size - 1, size - 1], fill=255)
+        ImageDraw.Draw(mask).ellipse([0, 0, size - 1, size - 1], fill=255)
         out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         out.paste(img, (0, 0), mask)
         return out
     return img
 
-def make_splash(w: int, h: int) -> Image.Image:
+def make_monochrome_splash(w: int, h: int) -> Image.Image:
+    # Pure #07080C Carbon backdrop with centered Monochrome Titanium-Silver Aero D logo
     img = Image.new("RGBA", (w, h), (7, 8, 12, 255))
-    draw = ImageDraw.Draw(img)
-    icon_sz = min(w, h) // 4
-    badge = make_icon(icon_sz, round_mask=False, foreground_only=True)
-    img.paste(badge, ((w - icon_sz) // 2, (h - icon_sz) // 2), badge)
-    dot_r = max(6, min(w, h) // 90)
-    gap = dot_r * 3
-    start_x = w // 2 - 2 * gap
-    y_lights = (h - icon_sz) // 2 - dot_r * 3
-    for i in range(5):
-        lx = start_x + i * gap
-        draw.ellipse([lx - dot_r, y_lights - dot_r, lx + dot_r, y_lights + dot_r], fill=(225, 6, 0, 255))
+    logo_sz = int(min(w, h) * 0.34)
+    mono_resized = mono_master.resize((logo_sz, logo_sz), Image.Resampling.LANCZOS)
+    img.alpha_composite(mono_resized, ((w - logo_sz) // 2, (h - logo_sz) // 2))
     return img
 
 mipmaps = {
@@ -74,14 +57,20 @@ for folder, sz in mipmaps.items():
 
 for d in RES.glob("drawable*"):
     if d.is_dir() and (d / "splash.png").exists():
-        make_splash(1080, 1920).save(d / "splash.png")
+        make_monochrome_splash(1080, 1920).save(d / "splash.png")
 (RES / "drawable").mkdir(parents=True, exist_ok=True)
-make_splash(1080, 1920).save(RES / "drawable/splash.png")
+make_monochrome_splash(1080, 1920).save(RES / "drawable/splash.png")
+
+# Save 288x288 monochrome splash icon for Android 12+ SplashScreen API
+mono_icon_288 = Image.new("RGBA", (288, 288), (7, 8, 12, 0))
+m_inner = mono_master.resize((192, 192), Image.Resampling.LANCZOS)
+mono_icon_288.alpha_composite(m_inner, (48, 48))
+mono_icon_288.save(RES / "drawable/splash_mono_icon.png")
 
 ic_bg = RES / "values/ic_launcher_background.xml"
 if ic_bg.exists():
     ic_bg.write_text(
-        '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#07080C</color>\n</resources>\n',
+        '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#0C0E16</color>\n</resources>\n',
         encoding="utf-8",
     )
 
@@ -102,6 +91,18 @@ shortcuts_xml = """<?xml version="1.0" encoding="utf-8"?>
             android:data="downforce://app/predict" />
     </shortcut>
     <shortcut
+        android:shortcutId="sprint_picks"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_sprint_short"
+        android:shortcutLongLabel="@string/shortcut_sprint_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="app.lovable.downforce"
+            android:targetClass="app.lovable.downforce.MainActivity"
+            android:data="downforce://app/sprint" />
+    </shortcut>
+    <shortcut
         android:shortcutId="standings"
         android:enabled="true"
         android:icon="@mipmap/ic_launcher"
@@ -113,18 +114,6 @@ shortcuts_xml = """<?xml version="1.0" encoding="utf-8"?>
             android:targetClass="app.lovable.downforce.MainActivity"
             android:data="downforce://app/leaderboard" />
     </shortcut>
-    <shortcut
-        android:shortcutId="h2h_battle"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_h2h_short"
-        android:shortcutLongLabel="@string/shortcut_h2h_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="app.lovable.downforce"
-            android:targetClass="app.lovable.downforce.MainActivity"
-            android:data="downforce://app/h2h" />
-    </shortcut>
 </shortcuts>
 """
 (xml_dir / "shortcuts.xml").write_text(shortcuts_xml, encoding="utf-8")
@@ -132,16 +121,18 @@ shortcuts_xml = """<?xml version="1.0" encoding="utf-8"?>
 strings_path = RES / "values/strings.xml"
 if strings_path.exists():
     strings_txt = strings_path.read_text(encoding="utf-8")
+    # Set clean single-line launcher name 'Downforce' so launcher never wraps 'DOWNFO / RCE'
+    strings_txt = strings_txt.replace(">DOWNFORCE<", ">Downforce<")
     if "shortcut_picks_short" not in strings_txt:
         extra_strings = """    <string name="shortcut_picks_short">Make Picks</string>
     <string name="shortcut_picks_long">Lock in your F1 Picks</string>
+    <string name="shortcut_sprint_short">Sprint Top 8</string>
+    <string name="shortcut_sprint_long">Predict Sprint Shootout &amp; Top 8</string>
     <string name="shortcut_standings_short">Standings</string>
     <string name="shortcut_standings_long">League Table &amp; Standings</string>
-    <string name="shortcut_h2h_short">1v1 Battle</string>
-    <string name="shortcut_h2h_long">Head-to-Head Comparison</string>
 </resources>"""
         strings_txt = strings_txt.replace("</resources>", extra_strings)
-        strings_path.write_text(strings_txt, encoding="utf-8")
+    strings_path.write_text(strings_txt, encoding="utf-8")
 
 styles_path = RES / "values/styles.xml"
 if styles_path.exists():
@@ -149,7 +140,12 @@ if styles_path.exists():
     if "android:windowBackground" not in st:
         st = st.replace(
             "</style>",
-            '        <item name="android:windowBackground">#07080C</item>\n        <item name="android:statusBarColor">#07080C</item>\n        <item name="android:navigationBarColor">#07080C</item>\n    </style>',
+            '        <item name="android:windowBackground">#07080C</item>\n'
+            '        <item name="android:statusBarColor">#07080C</item>\n'
+            '        <item name="android:navigationBarColor">#07080C</item>\n'
+            '        <item name="windowSplashScreenBackground">#07080C</item>\n'
+            '        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_mono_icon</item>\n'
+            '    </style>',
         )
         styles_path.write_text(st, encoding="utf-8")
 
@@ -193,23 +189,15 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getBridge() != null && getBridge().getWebView() != null) {
-            WebView webView = getBridge().getWebView();
-            webView.setBackgroundColor(Color.parseColor("#07080C"));
-
-            // Enable 1st and 3rd party cookies + DOM storage so Google OAuth & SetSID stay in-app
-            CookieManager cookieManager = CookieManager.getInstance();
-            cookieManager.setAcceptCookie(true);
-            cookieManager.setAcceptThirdPartyCookies(webView, true);
-
-            // Clean only '; wv' from the real device User-Agent so Sec-CH-UA headers match 100%
-            WebSettings settings = webView.getSettings();
-            settings.setDomStorageEnabled(true);
-            settings.setJavaScriptCanOpenWindowsAutomatically(true);
-            String ua = settings.getUserAgentString();
-            if (ua != null) {
-                String cleanUa = ua.replace("; wv", "").replace("Version/4.0 ", "");
-                settings.setUserAgentString(cleanUa);
-            }
+            WebView wv = getBridge().getWebView();
+            wv.setBackgroundColor(Color.parseColor("#07080C"));
+            WebSettings ws = wv.getSettings();
+            ws.setDomStorageEnabled(true);
+            ws.setDatabaseEnabled(true);
+            ws.setCacheMode(WebSettings.LOAD_DEFAULT);
+            CookieManager cm = CookieManager.getInstance();
+            cm.setAcceptCookie(true);
+            cm.setAcceptThirdPartyCookies(wv, true);
         }
         handleShortcutIntent(getIntent());
     }
@@ -235,4 +223,4 @@ public class MainActivity extends BridgeActivity {
 """,
     encoding="utf-8",
 )
-print("Android project customized with Google OAuth in-app fix.")
+print("Android project customized with Borderless Aero D Icon & Monochrome Splash.")

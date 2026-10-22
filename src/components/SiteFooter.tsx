@@ -18,7 +18,7 @@ export function SiteFooter() {
   if (pathname !== "/") return null;
 
   return (
-    <footer className="mt-12 border-t border-border bg-background/80">
+    <footer className="mt-12 hidden border-t border-border bg-background/80 md:block">
       <div className="kerb-strip" />
       <div className="mx-auto max-w-5xl px-4 pb-8 pt-8">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">

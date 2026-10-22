@@ -1,4 +1,3 @@
-import { initNativeShell } from "@/lib/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -9,7 +8,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -20,6 +19,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader, BottomNav } from "@/components/SiteHeader";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initNativeShell } from "@/lib/native";
 
 function NotFoundComponent() {
   return (
@@ -150,21 +150,37 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [bootDone, setBootDone] = useState(false);
 
   useEffect(() => {
+    initNativeShell().catch(() => {});
     if ("serviceWorker" in navigator) {
-      initNativeShell().catch(() => {}); navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+    const t = setTimeout(() => setBootDone(true), 240);
+    return () => clearTimeout(t);
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
+      {!bootDone && (
+        <div
+          aria-hidden
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#07080C] transition-opacity duration-200 md:hidden"
+        >
+          <img
+            src="/mono-splash.webp"
+            alt=""
+            className="h-32 w-32 object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.16)]"
+          />
+        </div>
+      )}
       <BackgroundSync />
       <InstallPrompt />
       <PullToRefresh />
       <div className="relative z-10 flex min-h-svh flex-col">
         <SiteHeader />
-        <div className="flex-1">
+        <div className="min-h-[calc(100dvh-4rem)] flex-1">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
@@ -176,3 +192,4 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+

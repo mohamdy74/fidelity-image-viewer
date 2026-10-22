@@ -1,6 +1,6 @@
 ﻿{
   "appId": "app.lovable.downforce",
-  "appName": "DOWNFORCE",
+  "appName": "Downforce",
   "webDir": "public",
   "backgroundColor": "#07080C",
   "overrideUserAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
@@ -23,7 +23,7 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 350,
+      "launchShowDuration": 450,
       "launchAutoHide": true,
       "launchFadeOutDuration": 180,
       "backgroundColor": "#07080C",

@@ -9,13 +9,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, racesQuery } from "@/lib/queries";
-import { sprintPoleLockAt, sprintWeekend } from "@/lib/sprint"; import { assertDeadlineOpen } from "@/lib/reminders.functions";
+import { sprintPoleLockAt, sprintWeekend } from "@/lib/sprint";
+import { assertDeadlineOpen } from "@/lib/prediction.functions";
 import {
   SPRINT_MAX_POINTS,
   SPRINT_SLOTS,
   scoreSprint,
   type SprintResultRow,
 } from "@/lib/sprintScoring";
+import { hapticErrorWarning, hapticGearShift, hapticLightsOutLaunch } from "@/lib/native";
 import { teamColor } from "@/lib/teams";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +47,19 @@ function Sprint() {
   const { data: races } = useQuery(racesQuery);
   const { data: drivers } = useQuery(driversQuery);
 
-  const race = useMemo(() => (races ? sprintWeekend(races) : null), [races]);
+  const sprintRaces = useMemo(
+    () => (races ?? []).filter((r) => r.has_sprint),
+    [races],
+  );
+  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
+  const race = useMemo(() => {
+    if (!races) return null;
+    if (selectedSprintId) {
+      const found = races.find((r) => r.id === selectedSprintId);
+      if (found) return found;
+    }
+    return sprintWeekend(races) ?? sprintRaces[sprintRaces.length - 1] ?? null;
+  }, [races, sprintRaces, selectedSprintId]);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -179,6 +193,7 @@ function Sprint() {
 
   async function save() { try { await assertDeadlineOpen({ data: { raceId: race!.id, kind: "sprint" } }); } catch (e) { toast.error(e instanceof Error ? e.message : "Locked"); return; }
     if (duplicates) {
+      hapticErrorWarning();
       toast.error("Each driver can only appear once in your sprint top 8.");
       return;
     }
@@ -223,7 +238,7 @@ function Sprint() {
     }
     toast.success("Sprint picks locked in.");
     setEditing(false);
-    navigator.vibrate?.([12, 40, 18]);
+    hapticLightsOutLaunch();
     queryClient.invalidateQueries({ queryKey: ["sprint-prediction", race!.id, user!.id] });
   }
 
@@ -251,14 +266,51 @@ function Sprint() {
       toast.error(error.message);
       return;
     }
+    hapticGearShift();
     toast.success("Sprint pole pick saved.");
     queryClient.invalidateQueries({ queryKey: ["sprint-prediction", race!.id, user!.id] });
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
-        Round {race.round} · Sprint
+    <main className="mx-auto max-w-3xl px-4 pb-28 pt-6">
+      {/* Unified Grand Prix ⇄ Sprint Glass Switcher */}
+      <div className="glass-pill mb-5 grid grid-cols-2 gap-1.5 rounded-2xl p-1">
+        <Link
+          to="/predict"
+          className="flex items-center justify-center gap-1.5 rounded-xl py-2 font-display text-xs font-bold uppercase tracking-wider text-white/70 transition hover:text-white"
+        >
+          <span>🏁 Grand Prix (52 PTS)</span>
+        </Link>
+        <Link
+          to="/sprint"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-gold py-2 font-display text-xs font-extrabold uppercase tracking-wider text-black shadow"
+        >
+          <span>⚡ Sprint (+9 PTS)</span>
+        </Link>
+      </div>
+
+      {sprintRaces.length > 1 && (
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {sprintRaces.map((sr) => (
+            <button
+              key={sr.id}
+              type="button"
+              onClick={() => setSelectedSprintId(sr.id)}
+              className={cn(
+                "glass-pill shrink-0 rounded-full px-3.5 py-1.5 font-mono text-xs font-bold transition",
+                sr.id === race.id
+                  ? "border-gold bg-gold/20 text-gold"
+                  : "text-white/60 hover:text-white",
+              )}
+            >
+              ⚡ R{sr.round} · {sr.name.replace(" Grand Prix", "")}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-gold">
+        Round {race.round} · Sprint Weekend (+9 PTS Max)
       </p>
       <h1 className="mt-1 text-3xl">{race.name}</h1>
       <p className="text-sm text-muted-foreground">
@@ -474,3 +526,4 @@ function Sprint() {
 function Shell({ children }: { children: React.ReactNode }) {
   return <main className="mx-auto max-w-3xl px-4 py-16">{children}</main>;
 }
+

@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Countdown } from "@/components/Countdown";
 import { DriverPicker, EMPTY } from "@/components/DriverPicker"; import { SprintGrid } from "@/components/SprintGrid";
 import { LightsOut } from "@/components/LightsOut";
-import { MissingPlayers } from "@/components/MissingPlayers"; import { assertDeadlineOpen, logPredAudit } from "@/lib/reminders.functions";
+import { MissingPlayers } from "@/components/MissingPlayers";
+import { assertDeadlineOpen, logPredAudit } from "@/lib/prediction.functions";
 import { SharePicks } from "@/components/SharePicks";
 import { SharePole } from "@/components/SharePole";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { driversQuery, nextRace, racesQuery, type Driver } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { sortByTeam, teamColor, teamLabel, teamsOf } from "@/lib/teams";
+import { hapticErrorWarning, hapticGearShift, hapticLightsOutLaunch, syncNativeRaceAlarms } from "@/lib/native";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -72,6 +73,15 @@ function Predict() {
   const { data: prediction } = useQuery({
     queryKey: ["prediction", race?.id, user?.id],
     enabled: !!race && !!user,
+    initialData: () => {
+      if (typeof window === "undefined" || !user?.id || !race?.id) return undefined;
+      try {
+        const raw = window.localStorage.getItem(`dfr:pred-cache:${user.id}:${race.id}`);
+        return raw ? JSON.parse(raw) : undefined;
+      } catch {
+        return undefined;
+      }
+    },
     queryFn: async () => {
       const { data, error } = await supabase
         .from("predictions")
@@ -80,6 +90,16 @@ function Predict() {
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
+      if (data && typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(
+            `dfr:pred-cache:${user!.id}:${race!.id}`,
+            JSON.stringify(data),
+          );
+        } catch {
+          /* ignore */
+        }
+      }
       return data;
     },
   });
@@ -143,6 +163,14 @@ function Predict() {
     const newDnf = prediction.dnf_driver_id ?? EMPTY;
     if (dnf !== newDnf) setDnf(newDnf);
   }, [prediction]);
+
+  useEffect(() => {
+    if (!race || prediction === undefined) return;
+    syncNativeRaceAlarms(race, {
+      hasPoleSaved: Boolean(prediction?.pole_driver_id),
+      hasRaceSaved: Boolean(prediction && (prediction.top10 ?? []).filter(Boolean).length === 10),
+    }).catch(() => {});
+  }, [race, prediction]);
 
   // ---- Draft autosave: a closed tab, a dead battery or an app switch never loses half-made picks ----
   const draftKey = user && race ? `dfr:draft:${user.id}:${race.id}` : null;
@@ -252,14 +280,17 @@ function Predict() {
 
   async function save() { try { await assertDeadlineOpen({ data: { raceId: race!.id, kind: "race" } }); } catch (e) { toast.error(e instanceof Error ? e.message : "Locked"); return; }
     if (duplicates) {
+      hapticErrorWarning();
       toast.error("Each driver can only appear once in your top 10.");
       return;
     }
     if (dnfInTop10) {
+      hapticErrorWarning();
       toast.error("Your DNF pick can't be one of your top 10 finishers.");
       return;
     }
     if (usedInTop10.length !== 10 && !raceLocked) {
+      hapticErrorWarning();
       toast.error("Pick all 10 positions before submitting.");
       return;
     }
@@ -313,7 +344,8 @@ function Predict() {
     }
     if (!poleLocked && pole !== EMPTY && pole !== savedPole) writePoleAt(user!.id, race!.id, pole);
     setEditing(false);
-    navigator.vibrate?.([12, 40, 18]);
+    hapticLightsOutLaunch();
+    syncNativeRaceAlarms(race!, { hasPoleSaved: true, hasRaceSaved: true }).catch(() => {});
     setLightsOut(true);
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
@@ -344,7 +376,9 @@ function Predict() {
       return;
     }
     toast.success("Pole pick saved."); logPredAudit({ data: { userId: user!.id, raceId: race!.id, predId: prediction?.id ?? user!.id, action: "pole", changes: { pole: [prediction?.pole_driver_id ?? null, pole] } } }).catch(() => null);
+    hapticGearShift();
     writePoleAt(user!.id, race!.id, pole);
+    syncNativeRaceAlarms(race!, { hasPoleSaved: true, hasRaceSaved: hasSaved }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["prediction", race!.id, user!.id] });
   }
 
@@ -356,7 +390,23 @@ function Predict() {
     : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-24 pt-10">
+    <main className="mx-auto max-w-3xl px-4 pb-28 pt-6">
+      {/* Unified Grand Prix ⇄ Sprint Glass Switcher */}
+      <div className="glass-pill mb-5 grid grid-cols-2 gap-1.5 rounded-2xl p-1">
+        <Link
+          to="/predict"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 font-display text-xs font-extrabold uppercase tracking-wider text-white shadow"
+        >
+          <span>🏁 Grand Prix (52 PTS)</span>
+        </Link>
+        <Link
+          to="/sprint"
+          className="flex items-center justify-center gap-1.5 rounded-xl py-2 font-display text-xs font-bold uppercase tracking-wider text-white/70 transition hover:text-white"
+        >
+          <span>⚡ Sprint (+9 PTS)</span>
+        </Link>
+      </div>
+
       <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-primary">
         Round {race.round}
       </p>
@@ -619,4 +669,5 @@ function TrackStatus({ target }: { target: string }) {
     </div>
   );
 }
+
 
