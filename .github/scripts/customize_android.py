@@ -9,15 +9,14 @@ WORKSPACE = Path(__file__).resolve().parents[2]
 
 icon_src_path = WORKSPACE / "public/app-icon.webp"
 fg_src_path = WORKSPACE / "public/aero-d-fg.webp"
-mono_src_path = WORKSPACE / "public/mono-splash.webp"
+outline_src_path = WORKSPACE / "public/outline-splash.webp"
 
 icon_master = Image.open(icon_src_path).convert("RGBA")
 fg_master = Image.open(fg_src_path).convert("RGBA")
-mono_master = Image.open(mono_src_path).convert("RGBA")
+outline_master = Image.open(outline_src_path).convert("RGBA")
 
 def make_icon(size: int, round_mask: bool = False, foreground_only: bool = False) -> Image.Image:
     if foreground_only:
-        # Android Adaptive Icon foreground is 108dp with a 66dp safe zone
         out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         inner = int(size * 0.68)
         fg_resized = fg_master.resize((inner, inner), Image.Resampling.LANCZOS)
@@ -33,12 +32,12 @@ def make_icon(size: int, round_mask: bool = False, foreground_only: bool = False
         return out
     return img
 
-def make_monochrome_splash(w: int, h: int) -> Image.Image:
-    # Pure #07080C Carbon backdrop with centered Monochrome Titanium-Silver Aero D logo
+def make_outline_splash(w: int, h: int) -> Image.Image:
+    # Pure #07080C Carbon with centered Glowing Titanium Outline Aero D logo
     img = Image.new("RGBA", (w, h), (7, 8, 12, 255))
-    logo_sz = int(min(w, h) * 0.34)
-    mono_resized = mono_master.resize((logo_sz, logo_sz), Image.Resampling.LANCZOS)
-    img.alpha_composite(mono_resized, ((w - logo_sz) // 2, (h - logo_sz) // 2))
+    logo_sz = int(min(w, h) * 0.36)
+    out_resized = outline_master.resize((logo_sz, logo_sz), Image.Resampling.LANCZOS)
+    img.alpha_composite(out_resized, ((w - logo_sz) // 2, (h - logo_sz) // 2))
     return img
 
 mipmaps = {
@@ -57,15 +56,14 @@ for folder, sz in mipmaps.items():
 
 for d in RES.glob("drawable*"):
     if d.is_dir() and (d / "splash.png").exists():
-        make_monochrome_splash(1080, 1920).save(d / "splash.png")
+        make_outline_splash(1080, 1920).save(d / "splash.png")
 (RES / "drawable").mkdir(parents=True, exist_ok=True)
-make_monochrome_splash(1080, 1920).save(RES / "drawable/splash.png")
+make_outline_splash(1080, 1920).save(RES / "drawable/splash.png")
 
-# Save 288x288 monochrome splash icon for Android 12+ SplashScreen API
-mono_icon_288 = Image.new("RGBA", (288, 288), (7, 8, 12, 0))
-m_inner = mono_master.resize((192, 192), Image.Resampling.LANCZOS)
-mono_icon_288.alpha_composite(m_inner, (48, 48))
-mono_icon_288.save(RES / "drawable/splash_mono_icon.png")
+outline_icon_288 = Image.new("RGBA", (288, 288), (7, 8, 12, 0))
+m_inner = outline_master.resize((192, 192), Image.Resampling.LANCZOS)
+outline_icon_288.alpha_composite(m_inner, (48, 48))
+outline_icon_288.save(RES / "drawable/splash_mono_icon.png")
 
 ic_bg = RES / "values/ic_launcher_background.xml"
 if ic_bg.exists():
@@ -74,64 +72,10 @@ if ic_bg.exists():
         encoding="utf-8",
     )
 
-xml_dir = RES / "xml"
-xml_dir.mkdir(parents=True, exist_ok=True)
-shortcuts_xml = """<?xml version="1.0" encoding="utf-8"?>
-<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <shortcut
-        android:shortcutId="make_picks"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_picks_short"
-        android:shortcutLongLabel="@string/shortcut_picks_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="app.lovable.downforce"
-            android:targetClass="app.lovable.downforce.MainActivity"
-            android:data="downforce://app/predict" />
-    </shortcut>
-    <shortcut
-        android:shortcutId="sprint_picks"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_sprint_short"
-        android:shortcutLongLabel="@string/shortcut_sprint_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="app.lovable.downforce"
-            android:targetClass="app.lovable.downforce.MainActivity"
-            android:data="downforce://app/sprint" />
-    </shortcut>
-    <shortcut
-        android:shortcutId="standings"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_standings_short"
-        android:shortcutLongLabel="@string/shortcut_standings_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="app.lovable.downforce"
-            android:targetClass="app.lovable.downforce.MainActivity"
-            android:data="downforce://app/leaderboard" />
-    </shortcut>
-</shortcuts>
-"""
-(xml_dir / "shortcuts.xml").write_text(shortcuts_xml, encoding="utf-8")
-
 strings_path = RES / "values/strings.xml"
 if strings_path.exists():
     strings_txt = strings_path.read_text(encoding="utf-8")
-    # Set clean single-line launcher name 'Downforce' so launcher never wraps 'DOWNFO / RCE'
     strings_txt = strings_txt.replace(">DOWNFORCE<", ">Downforce<")
-    if "shortcut_picks_short" not in strings_txt:
-        extra_strings = """    <string name="shortcut_picks_short">Make Picks</string>
-    <string name="shortcut_picks_long">Lock in your F1 Picks</string>
-    <string name="shortcut_sprint_short">Sprint Top 8</string>
-    <string name="shortcut_sprint_long">Predict Sprint Shootout &amp; Top 8</string>
-    <string name="shortcut_standings_short">Standings</string>
-    <string name="shortcut_standings_long">League Table &amp; Standings</string>
-</resources>"""
-        strings_txt = strings_txt.replace("</resources>", extra_strings)
     strings_path.write_text(strings_txt, encoding="utf-8")
 
 styles_path = RES / "values/styles.xml"
@@ -156,11 +100,6 @@ if manifest_path.exists():
         mf = mf.replace(
             'android:name=".MainActivity"',
             'android:name=".MainActivity" android:screenOrientation="portrait"',
-        )
-    if "android.app.shortcuts" not in mf:
-        mf = mf.replace(
-            "</activity>",
-            '            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />\n        </activity>',
         )
     if "android.permission.VIBRATE" not in mf:
         perms = """    <uses-permission android:name="android.permission.VIBRATE" />
@@ -223,4 +162,4 @@ public class MainActivity extends BridgeActivity {
 """,
     encoding="utf-8",
 )
-print("Android project customized with Borderless Aero D Icon & Monochrome Splash.")
+print("Android project customized with Borderless Aero D Icon & Outline Splash.")

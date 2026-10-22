@@ -84,7 +84,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Go to home
           </a>
         </div>
       </div>
@@ -92,15 +92,27 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+}>()({
   head: () => ({
     meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
+      {
+        name: "theme-color",
+        content: "#07080C",
+      },
       { title: "DOWNFORCE — Fantasy Racing League" },
       {
         name: "description",
-        content: "Predict the top 10, pole, fastest lap and DNF of every Grand Prix. Score points and win the league.",
+        content:
+          "Predict the top 10, pole, fastest lap and DNF of every Grand Prix. Score points and win the league.",
       },
       { property: "og:title", content: "DOWNFORCE — Fantasy Racing League" },
       {
@@ -111,7 +123,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "DOWNFORCE" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "DOWNFORCE — Fantasy Racing League" },
-      { name: "twitter:description", content: "Predict the top 10, pole, fastest lap and DNF of every Grand Prix. Score points and win the league." },
+      { name: "twitter:description", content: "Call the grid. Beat your rivals. Take the top step." },
       { name: "theme-color", content: "#0E0E12" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -150,28 +162,28 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [bootDone, setBootDone] = useState(false);
+  const [booting, setBooting] = useState(true);
 
   useEffect(() => {
     initNativeShell().catch(() => {});
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
-    const t = setTimeout(() => setBootDone(true), 240);
+    const t = setTimeout(() => setBooting(false), 240);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {!bootDone && (
+      {booting && (
         <div
           aria-hidden
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#07080C] transition-opacity duration-200 md:hidden"
         >
           <img
-            src="/mono-splash.webp"
+            src="/outline-splash.webp"
             alt=""
-            className="h-32 w-32 object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.16)]"
+            className="h-32 w-32 object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.18)]"
           />
         </div>
       )}
@@ -192,4 +204,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

@@ -10,7 +10,7 @@ on:
       - "public/offline.html"
       - "public/app-icon.webp"
       - "public/aero-d-fg.webp"
-      - "public/mono-splash.webp"
+      - "public/outline-splash.webp"
       - ".github/scripts/customize_android.py"
       - ".github/workflows/build-apk.yml"
 
@@ -58,7 +58,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Generate F1 Carbon/Crimson Icons, Splash Screen, App Shortcuts & Native Polish
+      - name: Generate F1 Carbon/Crimson Icons, Outline Splash Screen, App Shortcuts & Native Polish
         run: |
           python3 -m pip install --quiet pillow
           python3 "$GITHUB_WORKSPACE/.github/scripts/customize_android.py" /tmp/downforce-cap/android/app/src/main

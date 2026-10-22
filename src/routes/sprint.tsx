@@ -298,12 +298,12 @@ function Sprint() {
               onClick={() => setSelectedSprintId(sr.id)}
               className={cn(
                 "glass-pill shrink-0 rounded-full px-3.5 py-1.5 font-mono text-xs font-bold transition",
-                sr.id === race.id
+                sr.id === race?.id
                   ? "border-gold bg-gold/20 text-gold"
                   : "text-white/60 hover:text-white",
               )}
             >
-              ⚡ R{sr.round} · {sr.name.replace(" Grand Prix", "")}
+              ⚡ R{sr.round} · {sr.name?.replace(" Grand Prix", "") ?? ""}
             </button>
           ))}
         </div>
