@@ -1,44 +1,48 @@
-﻿const CACHE_NAME = "downforce-v2-cache";
-const STATIC_ASSETS = ["/", "/offline.html", "/favicon.svg", "/favicon.png", "/manifest.webmanifest"];
-
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()));
+﻿self.addEventListener("install", () => {
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))).then(() => self.clients.claim()));
-});
-
-self.addEventListener("fetch", (e) => {
-  const req = e.request;
-  const url = new URL(req.url);
-  if (req.method !== "GET" || url.pathname.startsWith("/api/") || url.hostname.includes("supabase.co") || url.hostname.includes("google.com")) return;
-
-  if (url.pathname.startsWith("/assets/") || url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".woff2") || url.pathname.endsWith(".png") || url.pathname.endsWith(".svg")) {
-    e.respondWith(
-      caches.match(req).then(cached => {
-        if (cached) {
-          fetch(req).then(res => { if (res && res.status === 200) caches.open(CACHE_NAME).then(c => c.put(req, res)); }).catch(() => {});
-          return cached;
-        }
-        return fetch(req).then(res => {
-          if (res && res.status === 200) { const cl = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, cl)); }
-          return res;
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((windowClients) => {
+        windowClients.forEach((client) => {
+          if ("navigate" in client) client.navigate(client.url).catch(() => {});
         });
       })
-    );
-    return;
-  }
+  );
+});
 
-  if (req.mode === "navigate") {
-    e.respondWith(
-      caches.match("/").then(cached => {
-        const net = fetch(req).then(res => {
-          if (res && res.status === 200) { const cl = res.clone(); caches.open(CACHE_NAME).then(c => c.put("/", cl)); }
-          return res;
-        }).catch(() => cached || caches.match("/offline.html"));
-        return cached || net;
-      })
-    );
+self.addEventListener("push", (event) => {
+  let data = { title: "DOWNFORCE F1", body: "Check the latest F1 action!" };
+  if (event.data) {
+    try { data = event.data.json(); } catch { data.body = event.data.text(); }
   }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "DOWNFORCE", {
+      body: data.body || "New telemetry update available.",
+      icon: "/favicon.png",
+      badge: "/favicon.png",
+      data: { url: data.url || "/predict" }
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/predict";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes("downforce") && "focus" in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
 });
